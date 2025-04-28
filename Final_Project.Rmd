@@ -75,18 +75,19 @@ data <- odata[, !(names(odata) %in% c("name", "ticket", "boat","body","home.dest
 
 #Replace NAs in age column with Median value 
 median_age <- median(data$age, na.rm = TRUE)
-
-data$deck <- substr(data$cabin, 1,1)
-
-data$cabin <- NULL
-
 data <- data %>%
   mutate(age = ifelse(is.na(age), median_age, age))
 
+#Extract deck letter from cabin
+data$deck <- substr(data$cabin, 1,1)
+data$cabin <- NULL
+
+#Create dummy variables
 data <- data %>%
   fastDummies :: dummy_cols(select_columns = c("sex", "embarked","deck"),
                             remove_selected_columns = TRUE)
 
+Remove NAs
 data <-na.omit(data)
 #head(data)
 set.seed(15)
@@ -105,7 +106,6 @@ data_test<-data[-datasplit,]
 cat("Training data set size:", nrow(data_train), "\n")
 cat("Testing data set size:", nrow(data_test), "\n")
 cat("Size of entire data set:", nrow(data), "\n")
-
 head(data)
 
 
