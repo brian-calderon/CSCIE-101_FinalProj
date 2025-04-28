@@ -28,3 +28,90 @@ plot(pressure)
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+---
+title: "Group Project"
+output: pdf_document
+date: "2025-04-25"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+#install.packages("fastDummies")
+library(ISLR2)
+library(tidyverse)
+library(caret)
+library(MASS)
+library(fastDummies)
+library(stringr)
+odata<- read.csv("Titanic_Survival_Data.csv")
+cat("Size of entire data set:", nrow(odata), "\n")
+
+#Remove Unneeded Columns'
+data <- odata[, !(names(odata) %in% c("name", "ticket", "boat","body","home.dest"))]
+
+#Replace NAs in age column with Median value 
+median_age <- median(data$age, na.rm = TRUE)
+
+data$deck <- substr(data$cabin, 1,1)
+
+data$cabin <- NULL
+
+data <- data %>%
+  mutate(age = ifelse(is.na(age), median_age, age))
+
+data <- data %>%
+  fastDummies :: dummy_cols(select_columns = c("sex", "embarked","deck"),
+                            remove_selected_columns = TRUE)
+
+data <-na.omit(data)
+#head(data)
+set.seed(15)
+
+#split data into train and test
+datasplit <- data %>%
+  group_by(survived) %>%
+  group_split() %>%
+  lapply(function(df) sample(seq_len(nrow(df)), size = 0.7 * nrow(df))) %>%
+  unlist()
+
+data_train<-data[datasplit,]
+data_test<-data[-datasplit,]
+
+#check the data
+cat("Training data set size:", nrow(data_train), "\n")
+cat("Testing data set size:", nrow(data_test), "\n")
+cat("Size of entire data set:", nrow(data), "\n")
+
+head(data)
+
+
+
+
+
+
+```
+
