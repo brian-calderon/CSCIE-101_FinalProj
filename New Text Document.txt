@@ -1,0 +1,198 @@
+```{r}
+library(ggplot2)
+################################################################################
+#                  Function to plot missing data in DF                         #
+################################################################################
+
+plot_missing_barchart <- function(df) {
+  # Calculate % of NA or empty strings per column
+  na_empty_pct <- sapply(df, function(col) {
+    mean(is.na(col) | col == "")
+  }) * 100
+  
+  # Create a dataframe from the result
+  na_df <- data.frame(
+    Column = names(na_empty_pct),
+    PercentMissing = na_empty_pct
+  )
+  
+  # Plot the bar chart
+  ggplot(na_df, aes(x = reorder(Column, -PercentMissing), y = PercentMissing)) +
+    geom_bar(stat = "identity", fill = "steelblue") +
+    coord_flip() +
+    labs(title = "Percentage of NA or Empty Cells per Column",
+         x = "Column",
+         y = "Percentage (%)") +
+    theme_minimal()
+}
+```
+
+
+```{r}
+################################################################################
+#                           Load Data                                          #
+################################################################################
+odata <- read.csv("data/Titanic_Survival_Data.csv")
+cat("Size of entire data set:", nrow(odata), "\n")
+```
+
+```{r}
+
+################################################################################
+#                           Remove Un-needed Cols                              # 
+################################################################################
+# Name: Removing because names have no inference on surivival (inference)
+# ticket: Ticket No. will also likely not have an influence in survival
+# boat: This is highly correlated to the survival dependant variable since people
+#       who made it on a boat likely survived
+# body: This is highly correlated to the survival dependant variable since people
+#       who's body was recovered did not survive.
+# home.dest: The destination likely has nothing to do with the survival
+
+data.clean = odata[, !(names(odata) %in% c("name", "ticket", "boat","body","home.dest"))]
+
+################################################################################
+#                           Data Augmentation                                  #   
+################################################################################
+#Extract deck letter from cabin
+data.clean$deck <- substr(data.clean$cabin, 1,1)
+# Remove cabin col:
+data.clean$cabin <- NULL
+
+################################################################################
+#                           Check for Missing values                           #
+################################################################################
+# Function to calculate % of NA or empty strings per column
+
+plot_missing_barchart(data.clean)
+################################################################################
+#                           Imputing data                                      #   
+################################################################################
+
+# ---- Age----
+#Replace NAs in age column with Median value 
+median_age <- median(data.clean$age, na.rm = TRUE)
+data.clean <- data.clean %>%
+  mutate(age = ifelse(is.na(age), median_age, age))
+
+# ---- deck----
+# For deck, since its a category, we decided to use KNN  to impute the column:
+
+# Install if not already installed
+# install.packages("VIM")
+library(VIM)
+
+# Replace "" with NA in the 'deck' column
+data.clean$deck[data.clean$deck == ""] <- NA
+
+# Convert 'cabin' to factor
+data.clean$deck <- as.factor(data.clean$deck)
+
+# Apply kNN imputation just to Cabin column
+data.clean <- kNN(data.clean, variable = "deck", k = 5)
+
+# Check that NAs were imputed
+# sum(is.na(data.clean$deck))        # Original
+# sum(is.na(data.clean.imputed$deck)) # After
+
+# Remove indicator col:
+data.clean$deck_imp <- NULL
+################################################################################
+#          Check for Missing values after Imputation                           #
+################################################################################
+# Function to calculate % of NA or empty strings per column
+plot_missing_barchart(data.clean)
+
+################################################################################
+#                           Check categorical cols                             # 
+################################################################################
+
+for (colname in names(data.clean)) {
+  # Count unique categories (including NA if present)
+  unique_vals <- table(odata[[colname]], useNA = "ifany")
+  
+  # Only print columns with 5 or fewer categories
+  if (length(unique_vals) <= 10) {
+    cat("----", colname, "----\n")
+    print(unique_vals)
+    cat("\n\n")
+  }
+}
+table(data.clean$deck)
+################################################################################
+#                           Dummify Cat. cols                                  # 
+################################################################################
+# Dummifying pclass:
+data.clean$pclass_1 = ifelse(data.clean$pclass == 1, 1, 0)
+data.clean$pclass_2 = ifelse(data.clean$pclass == 2, 1, 0)
+
+# Dummifying sex:
+data.clean$sex_M = ifelse(data.clean$sex == 'male', 1, 0)
+
+# Dummifying embarked:
+data.clean$embarked_C = ifelse(data.clean$embarked == 'C', 1, 0)
+data.clean$embarked_Q = ifelse(data.clean$embarked == 'Q', 1, 0)
+
+# Dummifying deck:
+data.clean$deck_A = ifelse(data.clean$deck == 'A', 1, 0)
+data.clean$deck_B = ifelse(data.clean$deck == 'B', 1, 0)
+data.clean$deck_C = ifelse(data.clean$deck == 'C', 1, 0)
+data.clean$deck_D = ifelse(data.clean$deck == 'D', 1, 0)
+data.clean$deck_E = ifelse(data.clean$deck == 'E', 1, 0)
+data.clean$deck_F = ifelse(data.clean$deck == 'F', 1, 0)
+data.clean$deck_G = ifelse(data.clean$deck == 'G', 1, 0)
+
+# Dummifying sibsp:
+data.clean$sibsp_1 = ifelse(data.clean$sibsp == 1, 1, 0)
+data.clean$sibsp_2 = ifelse(data.clean$sibsp == 2, 1, 0)
+data.clean$sibsp_3 = ifelse(data.clean$sibsp == 3, 1, 0)
+data.clean$sibsp_4 = ifelse(data.clean$sibsp == 4, 1, 0)
+data.clean$sibsp_5 = ifelse(data.clean$sibsp == 5, 1, 0)
+data.clean$sibsp_8 = ifelse(data.clean$sibsp == 8, 1, 0)
+
+# Dummifying parch:
+data.clean$parch_1 = ifelse(data.clean$parch == 1, 1, 0)
+data.clean$parch_2 = ifelse(data.clean$parch == 2, 1, 0)
+data.clean$parch_3 = ifelse(data.clean$parch == 3, 1, 0)
+data.clean$parch_4 = ifelse(data.clean$parch == 4, 1, 0)
+data.clean$parch_5 = ifelse(data.clean$parch == 5, 1, 0)
+data.clean$parch_6 = ifelse(data.clean$parch == 6, 1, 0)
+data.clean$parch_9 = ifelse(data.clean$parch == 9, 1, 0)
+
+# Removing Dummified cols:
+data.clean = subset(data.clean, select  = -c(pclass, sex, embarked,deck, sibsp, 
+                                             parch))
+
+```
+```{r}
+################################################################################
+#                           Remove NA rows                                     # 
+################################################################################
+data.clean = na.omit(data.clean)
+
+cat(nrow(odata) - nrow(data.clean),'rows were removed from original dataset')
+
+################################################################################
+#          Check for Missing values after na.omit()                            #
+################################################################################
+# Function to calculate % of NA or empty strings per column
+plot_missing_barchart(data.clean)
+
+################################################################################
+#                           Divide in Test/Train                               # 
+################################################################################
+
+# Diving the data into Training and Test
+# Sets the same seed for the random sampling after, usefull for reproducability. 
+set.seed(567)
+# NOTE: sample() expects a vector as the first kwarg, so you can't pass it a
+# dataframe directly, so instead you feed it a vector with the number of rows 
+# of the DF (i.e. 1 : nrow(crime_rate)), and use the results as indices to filter
+# your original DF later on.
+# If you want a more direct way to do this, you can use sample_n() from
+# library(dplyr), this one does take a DF as input. 
+train_indices = sample(1 : nrow(data.clean), size = 0.70*nrow(data.clean), replace = FALSE)
+train = data.clean[train_indices,]
+test = data.clean[-train_indices,]
+cat("We are using:", nrow(train)/nrow(data.clean) * 100, '% of the data for training')
+```
