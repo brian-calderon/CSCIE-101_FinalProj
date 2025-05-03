@@ -83,11 +83,27 @@ If you have not group by the end of the week of April 11 you may present the pro
 ```{r data loading and cleaning}
 titanic <- read.csv('/Users/Derek/Documents/Programming/HES/CSCI 106/Final Project/Titanic_Survival_Data.csv')
 str(titanic)
+titanic <- titanic[-nrow(titanic), ]
 
-titanic <- titanic[,-c(3,8,10,12,13,14)]
-titanic$sex <- as.factor(titanic$sex)
-#titanic$ticket <- as.factor(titanic$ticket)
-titanic$embarked<- as.factor(titanic$embarked)
+titanic <- titanic[,-c(3,8,12,13,14)]
+titanic$sex <- ifelse(titanic$sex == "female", 0, 1)
+titanic$embarkedC <- as.numeric(ifelse(titanic$embarked == "C", 1, 0))
+titanic$embarkedS <- as.numeric(ifelse(titanic$embarked == "S", 1, 0))
+titanic$cabin <- substring(titanic$cabin, 1, 1)
+titanic$cabinA <- as.numeric(ifelse(titanic$cabin == "A", 1, 0))
+titanic$cabinB <- as.numeric(ifelse(titanic$cabin == "B", 1, 0))
+titanic$cabinC <- as.numeric(ifelse(titanic$cabin == "C", 1, 0))
+titanic$cabinD <- as.numeric(ifelse(titanic$cabin == "D", 1, 0))
+titanic$cabinE <- as.numeric(ifelse(titanic$cabin == "E", 1, 0))
+titanic$cabinF <- as.numeric(ifelse(titanic$cabin == "F", 1, 0))
+titanic$cabinG <- as.numeric(ifelse(titanic$cabin == "G", 1, 0))
+titanic$cabinT <- as.numeric(ifelse(titanic$cabin == "T", 1, 0))
+
+titanic$age[is.na(titanic$age)] <- median(titanic$age, na.rm = TRUE)
+titanic$fare[is.na(titanic$fare)] <- median(titanic$fare, na.rm = TRUE)
+
+
+titanic <- titanic[,-c(8,9)]
 
 set.seed(15)
 n <- nrow(titanic)
@@ -97,34 +113,373 @@ test_titanic <- titanic[-train_index, ]
 
 sapply(titanic, class)
 
-
+# age, fare have blanks
 # for cabin, pull only the first letter and use that for the model (all n/a put into the same category).
 # Potentially do age w/ median and another model where we drop n/a ages.
 ```
 
-```{r model creation}
+```{r Catherine cleaning}
+#install.packages("fastDummies")
+library(ISLR2)
+library(tidyverse)
+library(caret)
+library(MASS)
+library(fastDummies)
+library(stringr)
+odata<- read.csv("Titanic_Survival_Data.csv")
+cat("Size of entire data set:", nrow(odata), "\n")
+
+#Remove Unneeded Columns'
+data <- odata[, !(names(odata) %in% c("name", "ticket", "boat","body","home.dest"))]
+
+#Replace NAs in age column with Median value 
+median_age <- median(data$age, na.rm = TRUE)
+data <- data %>%
+  mutate(age = ifelse(is.na(age), median_age, age))
+
+#Extract deck letter from cabin
+data$deck <- substr(data$cabin, 1,1)
+data$cabin <- NULL
+
+#Create dummy variables
+data <- data %>%
+  fastDummies :: dummy_cols(select_columns = c("sex", "embarked","deck"),
+                            remove_selected_columns = TRUE)
+
+#Remove NAs
+data <-na.omit(data)
+#head(data)
+set.seed(15)
+
+#split data into train and test
+datasplit <- data %>%
+  group_by(survived) %>%
+  group_split() %>%
+  lapply(function(df) sample(seq_len(nrow(df)), size = 0.7 * nrow(df))) %>%
+  unlist()
+
+data_train<-data[datasplit,]
+data_test<-data[-datasplit,]
+
+#check the data
+cat("Training data set size:", nrow(data_train), "\n")
+cat("Testing data set size:", nrow(data_test), "\n")
+cat("Size of entire data set:", nrow(data), "\n")
+head(data)
+```
+
+```{r Group cleaning code}
+library(ISLR2)
+library(tidyverse)
+library(caret)
+library(MASS)
+library(fastDummies)
+library(stringr)
+library(VIM)
+
+odata <- read.csv("Titanic_Survival_Data.csv")
+cat("Size of entire data set:", nrow(odata), "\n")
+
+#Extract deck letter from cabin
+odata$deck <- substr(odata$cabin, 1,1)
+
+# Replace "" with NA in the 'deck' column
+odata$deck[odata$deck == ""] <- NA
+
+# Convert 'cabin' to factor
+odata$deck <- as.factor(odata$deck)
+
+# Apply kNN imputation just to Cabin column
+odata <- kNN(odata, variable = "deck", k = 5)
+
+# Check that NAs were imputed
+sum(is.na(odata$deck))        # Original
+#sum(is.na(data.clean.imputed$deck)) # After
+
+data.clean = odata[, !(names(odata) %in% c("name", "ticket", "boat","body","home.dest"))]
+
+# Remove cabin col:
+data.clean$cabin <- NULL
+
+#Replace NAs in age column with Median value 
+median_age <- median(data.clean$age, na.rm = TRUE)
+data.clean <- data.clean %>%
+  mutate(age = ifelse(is.na(age), median_age, age))
+
+
+# Dummifying pclass:
+data.clean$pclass_1 = ifelse(data.clean$pclass == 1, 1, 0)
+data.clean$pclass_2 = ifelse(data.clean$pclass == 2, 1, 0)
+
+# Dummifying sex:
+data.clean$sex_M = ifelse(data.clean$sex == 'male', 1, 0)
+
+# Dummifying embarked:
+data.clean$embarked_C = ifelse(data.clean$embarked == 'C', 1, 0)
+data.clean$embarked_Q = ifelse(data.clean$embarked == 'Q', 1, 0)
+
+# Dummifying deck:
+data.clean$deck_A = ifelse(data.clean$deck == 'A', 1, 0)
+data.clean$deck_B = ifelse(data.clean$deck == 'B', 1, 0)
+data.clean$deck_C = ifelse(data.clean$deck == 'C', 1, 0)
+data.clean$deck_D = ifelse(data.clean$deck == 'D', 1, 0)
+data.clean$deck_E = ifelse(data.clean$deck == 'E', 1, 0)
+data.clean$deck_F = ifelse(data.clean$deck == 'F', 1, 0)
+data.clean$deck_G = ifelse(data.clean$deck == 'G', 1, 0)
+
+# Dummifying sibsp:
+data.clean$sibsp_1 = ifelse(data.clean$sibsp == 1, 1, 0)
+data.clean$sibsp_2 = ifelse(data.clean$sibsp == 2, 1, 0)
+data.clean$sibsp_3 = ifelse(data.clean$sibsp == 3, 1, 0)
+data.clean$sibsp_4 = ifelse(data.clean$sibsp == 4, 1, 0)
+data.clean$sibsp_5 = ifelse(data.clean$sibsp == 5, 1, 0)
+data.clean$sibsp_8 = ifelse(data.clean$sibsp == 8, 1, 0)
+
+# Dummifying sibsp to 2 categories:
+#data.clean$sibsp_y = ifelse(data.clean$sibsp > 0, 1, 0)
+
+# Dummifying parch:
+data.clean$parch_1 = ifelse(data.clean$parch == 1, 1, 0)
+data.clean$parch_2 = ifelse(data.clean$parch == 2, 1, 0)
+data.clean$parch_3 = ifelse(data.clean$parch == 3, 1, 0)
+data.clean$parch_4 = ifelse(data.clean$parch == 4, 1, 0)
+data.clean$parch_5 = ifelse(data.clean$parch == 5, 1, 0)
+data.clean$parch_6 = ifelse(data.clean$parch == 6, 1, 0)
+data.clean$parch_9 = ifelse(data.clean$parch == 9, 1, 0)
+
+# Dummifying parch to 2 categories:
+#data.clean$parch_y = ifelse(data.clean$parch > 0, 1, 0)
+
+# Removing Dummified cols:
+data.clean = subset(data.clean, select  = -c(pclass, sex, embarked, deck, deck_imp))#, sibsp, parch))
+
+data.clean = na.omit(data.clean)
+
+cat(nrow(odata) - nrow(data.clean),'rows were removed from original dataset')
+
+set.seed(567)
+train_indices = sample(1 : nrow(data.clean), size = 0.7005*nrow(data.clean), replace = FALSE)
+train = data.clean[train_indices,]
+test = data.clean[-train_indices,]
+cat("We are using:", nrow(train)/nrow(data.clean) * 100, '% of the data for training')
+
+```
+
+```{r Group model creation code - sibsp and parch as individual categories}
+# Expected model structure: survived ~ pclass + Sex + sibsp + parch + ticket + fare + cabin + embarked
+
+# Run the code to clean the data as normal
+simple_model1 <- lm(survived ~ pclass_1, data = train)
+simple_model2 <- lm(survived ~ sex_M, data = train)
+simple_model3 <- lm(survived ~ age, data = train)
+mulvar_model <- lm(survived ~ ., data = train)
+summary(mulvar_model)
+
+lmod <- glm(as.factor(survived) ~ ., family = binomial, data = train)
+
+summary(lmod)
+
+y_hat_mulvar_train<-predict(mulvar_model, data = train)
+predictions_train <- ifelse(y_hat_mulvar_train > 0.5, 1, 0)
+ModelTrain_mulvar<-data.frame(obs = train$survived, pred=predictions_train)
+defaultSummary(ModelTrain_mulvar)
+
+y_hat_mulvar_test<-predict(mulvar_model, newdata = test)
+predictions_test <- ifelse(y_hat_mulvar_test > 0.5, 1, 0)
+ModelTest_mulvar<-data.frame(obs = test$survived, pred=predictions_test)
+defaultSummary(ModelTest_mulvar)
+
+
+y_hat_log_train<-predict(lmod, data = train)
+ModelTrain_lmod<-data.frame(obs = train$survived, pred=y_hat_log_train)
+defaultSummary(ModelTrain_mulvar)
+
+y_hat_log_test<-predict(lmod, newdata = test)
+ModelTest_lmod<-data.frame(obs = test$survived, pred=y_hat_log_test)
+defaultSummary(ModelTest_lmod)
+
+```
+
+```{r Group model creation code - sibsp and parch as 2 categories}
+# Expected model structure: survived ~ pclass + Sex + sibsp + parch + ticket + fare + cabin + embarked
+
+# Run the code to clean all of the data up to the sibsp and parch cleaning. For that section, only run the code to create 1 dummy column.
+simple_model1 <- lm(survived ~ pclass_1, data = train)
+simple_model2 <- lm(survived ~ sex_M, data = train)
+simple_model3 <- lm(survived ~ age, data = train)
+sib_model <- lm(survived ~ sibsp_y, data = train)
+summary(sib_model)
+
+mulvar_model <- lm(survived ~ ., data = train)
+summary(mulvar_model)
+
+lmod <- glm(as.factor(survived) ~ ., family = binomial, data = train)
+
+summary(lmod)
+
+#y_hat_sib_train<-predict(sib_model, data = train)
+#predictions_train <- ifelse(y_hat_sib_train > 0.5, 1, 0)
+#confusion_matrix_train <- table(Actual = train$survived, Predicted = predictions_train)
+#print(confusion_matrix_train)
+
+#y_hat_sib_test<-predict(sib_model, newdata = test)
+#predictions_test <- ifelse(y_hat_sib_test > 0.5, 1, 0)
+#confusion_matrix_test <- table(Actual = test$survived, Predicted = predictions_test)
+#print(confusion_matrix_test)
+
+y_hat_mulvar_train<-predict(mulvar_model, data = train)
+predictions_train <- ifelse(y_hat_mulvar_train > 0.5, 1, 0)
+ModelTrain_mulvar<-data.frame(obs = train$survived, pred=predictions_train)
+defaultSummary(ModelTrain_mulvar)
+
+y_hat_mulvar_test<-predict(mulvar_model, newdata = test)
+predictions_test <- ifelse(y_hat_mulvar_test > 0.5, 1, 0)
+ModelTest_mulvar<-data.frame(obs = test$survived, pred=predictions_test)
+defaultSummary(ModelTest_mulvar)
+
+
+y_hat_log_train<-predict(lmod, data = train)
+ModelTrain_lmod<-data.frame(obs = train$survived, pred=y_hat_log_train)
+defaultSummary(ModelTrain_mulvar)
+
+y_hat_log_test<-predict(lmod, newdata = test)
+ModelTest_lmod<-data.frame(obs = test$survived, pred=y_hat_log_test)
+defaultSummary(ModelTest_lmod)
+
+```
+
+```{r Group model creation code - sibsp and parch dummies as continuous}
+# Expected model structure: survived ~ pclass + Sex + sibsp + parch + ticket + fare + cabin + embarked
+
+# Run the code to clean the data, but stop before you transform the sibsp and parch into categorical data.
+simple_model1 <- lm(survived ~ pclass_1, data = train)
+simple_model2 <- lm(survived ~ sex_M, data = train)
+simple_model3 <- lm(survived ~ age, data = train)
+mulvar_model <- lm(survived ~ ., data = train)
+summary(mulvar_model)
+
+lmod <- glm(as.factor(survived) ~ ., family = binomial, data = train)
+
+summary(lmod)
+
+y_hat_mulvar_train<-predict(mulvar_model, data = train)
+predictions_train <- ifelse(y_hat_mulvar_train > 0.5, 1, 0)
+ModelTrain_mulvar<-data.frame(obs = train$survived, pred=predictions_train)
+defaultSummary(ModelTrain_mulvar)
+
+y_hat_mulvar_test<-predict(mulvar_model, newdata = test)
+predictions_test <- ifelse(y_hat_mulvar_test > 0.5, 1, 0)
+ModelTest_mulvar<-data.frame(obs = test$survived, pred=predictions_test)
+defaultSummary(ModelTest_mulvar)
+
+
+y_hat_log_train<-predict(lmod, data = train)
+ModelTrain_lmod<-data.frame(obs = train$survived, pred=y_hat_log_train)
+defaultSummary(ModelTrain_mulvar)
+
+y_hat_log_test<-predict(lmod, newdata = test)
+ModelTest_lmod<-data.frame(obs = test$survived, pred=y_hat_log_test)
+defaultSummary(ModelTest_lmod)
+
+```
+
+```{r my original model creation code}
 # Expected model structure: survived ~ pclass + Sex + sibsp + parch + ticket + fare + cabin + embarked
 
 simple_model1 <- lm(survived ~ pclass, data = train_titanic)
 simple_model2 <- lm(survived ~ sex, data = train_titanic)
 simple_model3 <- lm(survived ~ age, data = train_titanic)
-mulvar_model <- lm(survived ~ pclass + sex + age + sibsp + parch + ticket + fare + cabin + embarked, data = train_titanic)
-lmod1 <- glm(as.factor(survived) ~ pclass + sex + age + sibsp + parch + ticket + fare + cabin + embarked, family = binomial, data = train_titanic)
-lmod <- glm(as.factor(survived) ~ pclass + sex + age + sibsp + parch + fare + embarked, family = binomial, data = train_titanic)
+mulvar_model <- lm(survived ~ ., data = train_titanic)
+summary(mulvar_model)
+
+lmod <- glm(as.factor(survived) ~ ., family = binomial, data = train_titanic)
 
 summary(lmod)
+
+y_hat_mulvar_train<-predict(mulvar_model, data = train_titanic)
+predictions_train <- ifelse(y_hat_mulvar_train > 0.5, 1, 0)
+ModelTrain_mulvar<-data.frame(obs = train_titanic$survived, pred=predictions_train)
+defaultSummary(ModelTrain_mulvar)
+
+y_hat_mulvar_test<-predict(mulvar_model, newdata = test_titanic)
+predictions_test <- ifelse(y_hat_mulvar_test > 0.5, 1, 0)
+ModelTest_mulvar<-data.frame(obs = test_titanic$survived, pred=predictions_test)
+defaultSummary(ModelTest_mulvar)
+
+
+y_hat_log_train<-predict(lmod, data = train_titanic)
+ModelTrain_lmod<-data.frame(obs = train_titanic$survived, pred=y_hat_log_train)
+defaultSummary(ModelTrain_mulvar)
+
+y_hat_log_test<-predict(lmod, newdata = test_titanic)
+ModelTest_lmod<-data.frame(obs = test_titanic$survived, pred=y_hat_log_test)
+defaultSummary(ModelTest_lmod)
+
 ```
+
 ```{r plots and correlation of model}
+library(ggplot2)
+par(mfrow=c(2,2))
+plot(mulvar_model)
+# Plots show that a linear model is not appropriate for this data.
+
+par(mfrow=c(2,2))
+plot(lmod)
+# Plots show that a linear model is not appropriate for this data.
+
+ggplot(train_titanic, aes(survived)) +
+  geom_bar()
+
+ggplot(train_titanic, aes(pclass, survived)) +
+  geom_point()
+
+
+survival_by_sex <- train_titanic %>%
+  group_by(sex) %>%
+  summarize(survived_count = sum(survived))
+
+ggplot(survival_by_sex, aes(x= sex, y = survived_count, fill = factor(sex))) +
+  geom_bar(stat = 'identity') + 
+  scale_x_discrete(labels = c("0" = "Female", "1" = "Male")) +
+  scale_fill_discrete(labels = c("0" = "Female", "1" = "Male"), name = "Sex") +
+  geom_text(aes(label = survived_count), vjust = -0.5) +
+  labs(
+    title = "Number of People Who Survived by Sex",
+    x = "Sex",
+    y = "Survived",
+    fill = "Sex"
+  ) +
+  theme_minimal()
+
+ggplot(train_titanic, aes(age, survived)) +
+  geom_point()
+
+
+cor(train_titanic)
+pairs(train_titanic[c(1:4,7,13)])
+# Since this data is mainly categorical, the scatterplot and correlation matrix are not very useful.
+
+```
+
+
+```{r model and graphs based on group cleaned data}
+simple_model1 <- lm(survived ~ pclass, data = train_titanic)
+simple_model2 <- lm(survived ~ sex, data = train_titanic)
+simple_model3 <- lm(survived ~ age, data = train_titanic)
+mulvar_model <- lm(survived ~ ., data = train_titanic)
+lmod <- glm(as.factor(survived) ~ ., family = binomial, data = train_titanic)
+
+summary(lmod)
+
+
 par(mfrow=c(2,2))
 plot(mulvar_model)
 # Plots show that a linear model is not appropriate for this data.
 
 cor(train_titanic)
-pairs(train_titanic)
+pairs(train_titanic[c(1:4,7,13)])
 # Since this data is mainly categorical, the scatterplot and correlation matrix are not very useful.
-
 ```
-
 Data Cleaning and Visualization
 - Check for N/A and missing values
 - Check correlations among the data
@@ -173,7 +528,7 @@ Graphs for Final Model
 
 Executive Summary
 
-This section will describe the model usage, your conclusions and any regulatory and internal requirements. In a real world scneario, this section is for senior management who do not need to know the details. They need to know high level (the purpose of the model, limitations of the model and any issues).
+This section will describe the model usage, your conclusions and any regulatory and internal requirements. In a real world scenario, this section is for senior management who do not need to know the details. They need to know high level (the purpose of the model, limitations of the model and any issues).
 
 
 \newpage
