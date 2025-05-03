@@ -535,7 +535,7 @@ This section will describe the model usage, your conclusions and any regulatory 
 ## I. Introduction (5 points)
 
 *This section needs to introduce the reader to the problem to be resolved, the purpose, and the scope of the statistical testing applied. What you are doing with your prediction? What is the purpose of the model? What methods were trained on the data, how large is the test sample, and how did you build the model?*
-
+The Titanic was a British-registered ship that set sail on its maiden voyage on April 10th, 1912 with 2,240 passengers and crew on board. On April 15th, 1912, the ship struck an iceberg, split in half, and sank to the bottom of the ocean (REF 1). In this report, we are going to analyze the data in the Titanic.csv file and use it to determine the best model for predicting whether someone on board would live or die. By creating this model, we hope to understand what factors a passenger could have taken into account in order to reduce their risk of death during the trip. We cleaned the data and split into into a train/test split in order to properly train our models. We created simple linear models, multivariate linear models, logistic models (both binomial and poisson), a regression tree, and a neural network model. The train sample size was 916 data points (70.03058%) and the test sample size was 392 data points (29.96942%). We built the models after examining the data and determining which predictor variables we thought would be most relevant for survival rate. Once we had our variables and training data, we created the models and examined the performance of the models on both training and testing data to determine if they were robust. We also examined if the model assumptions appeared to hold for each model.
 
 \newpage
 ## I. Description of the data and quality (15 points)
@@ -569,6 +569,7 @@ This section will describe the model usage, your conclusions and any regulatory 
 ## VII. Ongoing Model Monitoring Plan (5 points)
 
 *How would you picture the model needing to be monitored, which quantitative thresholds and triggers would you set to decide when the model needs to be replaced? What are the assumptions that the model must comply with for its continuous use?*
+In order to maintain the effectiveness of the model, we would need to continue to test it on new data. Since the Titanic was a rare event, we do not have a lot of new data to test on the model, but we can still be prepared in case new data were to become available. The first step in monitoring the model is to determine specific thresholds that we expect the model to stay above. We would want the model to maintain certain R^2, RMSE, and MAE values in order to determine that the model is working correctly. One of the biggest concerns with our model is data drift. Since the Titanic sank over 100 years ago, the data that we are using from the model may not align with today relevant to ship travel today. 
 
 
 \newpage
@@ -579,6 +580,11 @@ This section will describe the model usage, your conclusions and any regulatory 
 ## Bibliography (7 points)
 
 *Please include all references, articles and papers in this section.*
+(REF 1) "https://www.noaa.gov/office-of-general-counsel/gc-international-section/rms-titanic-history-and-significance#:~:text=Titanic%2C%20launched%20on%20May%2031,than%201%2C500%20passengers%20and%20crew."
+
+(REF 2) "https://prepineer.com/s/binomial-distribution/#:~:text=It%20gives%20us%20the%20probability%20of%20getting%20r%20events%20in,an%20infinite%20number%20of%20trials."
+
+(REF 3) "https://www.evidentlyai.com/ml-in-production/model-monitoring"
 
 ## Appendix (3 points)
 
