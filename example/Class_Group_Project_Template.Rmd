@@ -191,7 +191,6 @@ odata$deck <- as.factor(odata$deck)
 
 # Apply kNN imputation just to Cabin column
 odata <- kNN(odata, variable = "deck", k = 5)
-odata <- odata[-1310,]
 
 # Check that NAs were imputed
 sum(is.na(odata$deck))        # Original
@@ -237,7 +236,7 @@ data.clean$sibsp_5 = ifelse(data.clean$sibsp == 5, 1, 0)
 data.clean$sibsp_8 = ifelse(data.clean$sibsp == 8, 1, 0)
 
 # Dummifying sibsp to 2 categories:
-data.clean$sibsp_y = ifelse(data.clean$sibsp > 0, 1, 0)
+#data.clean$sibsp_y = ifelse(data.clean$sibsp > 0, 1, 0)
 
 # Dummifying parch:
 data.clean$parch_1 = ifelse(data.clean$parch == 1, 1, 0)
@@ -249,7 +248,7 @@ data.clean$parch_6 = ifelse(data.clean$parch == 6, 1, 0)
 data.clean$parch_9 = ifelse(data.clean$parch == 9, 1, 0)
 
 # Dummifying parch to 2 categories:
-data.clean$parch_y = ifelse(data.clean$parch > 0, 1, 0)
+#data.clean$parch_y = ifelse(data.clean$parch > 0, 1, 0)
 
 # Removing Dummified cols:
 data.clean = subset(data.clean, select  = -c(pclass, sex, embarked, deck, deck_imp))#, sibsp, parch))
@@ -266,96 +265,6 @@ cat("We are using:", nrow(train)/nrow(data.clean) * 100, '% of the data for trai
 
 ```
 
-```{r Initial data exploration}
-# Histogram showing that more people in their late teens up to late thirties survived.
-ggplot(odata, aes(age)) +
-  geom_histogram(bins=30)
-
-# Bar chart showing that more females survived than males.
-ggplot(odata, aes(survived)) +
-  geom_bar()
-
-# Bar chart showing that a higher number of people survived when they had less siblings on board.
-ggplot(data.clean, aes(sibsp, survived)) +
-  geom_bar(stat='identity')
-
-ggplot(data.clean, aes(age, sibsp)) +
-  geom_point()
-
-ggplot(data.clean, aes(age, parch)) +
-  geom_point()
-
-ggplot(data.clean, aes(age, fare)) +
-  geom_point()
-
-ggplot(data.clean, aes(sibsp, parch)) +
-  geom_point()
-
-ggplot(data.clean, aes(sibsp, fare)) +
-  geom_point()
-
-ggplot(data.clean, aes(parch, fare)) +
-  geom_point()
-
-#install.packages("psych")
-library(psych) # Reference 4 to understand how this works
-tetrachoric(data.clean[, c("survived", "sex_M")])
-
-#install.packages("polycor")
-library(polycor) # Reference 4 to understand how this works
-polychor(odata$survived, odata$pclass)
-
-#install.packages("rcompanion")
-library(rcompanion) # Reference 4 to understand how this works.
-cramerV(odata$survived, odata$sex)
-cramerV(odata$survived, odata$pclass) # most likely needs to be polychor
-cramerV(odata$survived, odata$embarked)
-cramerV(odata$survived, odata$deck)
-
-cor_matrix <- cor(data.clean)#[,1]
-
-library(corrplot)
-corrplot(cor_matrix, method = "circle")
-
-```
-
-```{r Data exploration on train subset}
-# Histogram showing that more people in their late teens up to late thirties survived.
-ggplot(train, aes(age)) +
-  geom_histogram(bins=30)
-
-# Bar chart showing that more females survived than males.
-ggplot(train, aes(survived)) +
-  geom_bar()
-
-# Bar chart showing that a higher number of people survived when they had less siblings on board.
-ggplot(train, aes(sibsp, survived)) +
-  geom_bar(stat='identity')
-
-ggplot(train, aes(age, sibsp)) +
-  geom_point()
-
-ggplot(train, aes(age, fare)) +
-  geom_point()
-
-#install.packages("psych")
-library(psych) # Reference 4 to understand how this works
-tetrachoric(train[, c("survived", "sex_M")])
-tetrachoric(train[, c("survived", "pclass_1")])
-tetrachoric(train[, c("survived", "pclass_2")])
-
-#install.packages("rcompanion")
-library(rcompanion) # Reference 4 to understand how this works.
-cramerV(train$survived, train$sex)
-
-
-cor_matrix <- cor(train)#[,1]
-
-library(corrplot)
-corrplot(cor_matrix, method = "circle")
-
-```
-
 ```{r Group model creation code - sibsp and parch as individual categories}
 # Expected model structure: survived ~ pclass + Sex + sibsp + parch + ticket + fare + cabin + embarked
 
@@ -363,15 +272,12 @@ corrplot(cor_matrix, method = "circle")
 simple_model1 <- lm(survived ~ pclass_1, data = train)
 simple_model2 <- lm(survived ~ sex_M, data = train)
 simple_model3 <- lm(survived ~ age, data = train)
-#mulvar_model <- lm(survived ~ ., data = train)
-mulvar_model <- lm(survived ~ .-deck_G, data = train)
+mulvar_model <- lm(survived ~ ., data = train)
 summary(mulvar_model)
-vif(mulvar_model)
 
-#lmod <- glm(as.factor(survived) ~ ., family = binomial, data = train)
-lmod <- glm(as.factor(survived) ~ .-deck_G, family = binomial, data = train)
+lmod <- glm(as.factor(survived) ~ ., family = binomial, data = train)
+
 summary(lmod)
-vif(lmod)
 
 y_hat_mulvar_train<-predict(mulvar_model, data = train)
 predictions_train <- ifelse(y_hat_mulvar_train > 0.5, 1, 0)
@@ -404,15 +310,12 @@ simple_model3 <- lm(survived ~ age, data = train)
 sib_model <- lm(survived ~ sibsp_y, data = train)
 summary(sib_model)
 
-#mulvar_model <- lm(survived ~ ., data = train)
-mulvar_model <- lm(survived ~ .-deck_G, data = train)
+mulvar_model <- lm(survived ~ ., data = train)
 summary(mulvar_model)
-vif(mulvar_model)
 
-#lmod <- glm(as.factor(survived) ~ ., family = binomial, data = train)
-lmod <- glm(as.factor(survived) ~ .-deck_G, family = binomial, data = train)
+lmod <- glm(as.factor(survived) ~ ., family = binomial, data = train)
+
 summary(lmod)
-vif(lmod)
 
 #y_hat_sib_train<-predict(sib_model, data = train)
 #predictions_train <- ifelse(y_hat_sib_train > 0.5, 1, 0)
@@ -447,138 +350,36 @@ defaultSummary(ModelTest_lmod)
 
 ```{r Group model creation code - sibsp and parch dummies as continuous}
 # Expected model structure: survived ~ pclass + Sex + sibsp + parch + ticket + fare + cabin + embarked
-library(car)
 
 # Run the code to clean the data, but stop before you transform the sibsp and parch into categorical data.
 simple_model1 <- lm(survived ~ pclass_1, data = train)
-summary(simple_model1)
-
 simple_model2 <- lm(survived ~ sex_M, data = train)
-summary(simple_model2)
-
 simple_model3 <- lm(survived ~ age, data = train)
-summary(simple_model3)
-
-#mulvar_model <- lm(survived ~ ., data = train)
-mulvar_model <- lm(survived ~ .-deck_G, data = train)
+mulvar_model <- lm(survived ~ ., data = train)
 summary(mulvar_model)
-vif(mulvar_model)
 
-#lmod <- glm(as.factor(survived) ~ ., family = binomial, data = train)
-lmod <- glm(as.factor(survived) ~ .-deck_G, family = binomial, data = train)
-summary(lmod) # Null deviance 1223.12 and Residual deviance 679.11
-vif(lmod)
+lmod <- glm(as.factor(survived) ~ ., family = binomial, data = train)
 
-t_stat <- 1223.12 - 679.11
-df <- 15
+summary(lmod)
 
-# Ho: Variables are not important
-# Ha: Variable are important
-
-1-pchisq(t_stat, df)
-
-# Since the value is 0, we reject Ho and fail to reject Ha. This means that at least some of the variables in the model are important. 
-
-anova(lmod, test="Chi")
-
-# Goodness of fit test
-# Ho: The model is a good fit
-# Ha: The model is not a good fit.
-library(ResourceSelection)
-hoslem.test(lmod$y,fitted(lmod),g=5)
-
-# The p-value of 0.5621 indicates that we fail to reject Ho. This indicates that the model is a good fit.
-
-y_hat_mulvar_train <- predict(mulvar_model, data = train, type="response")
+y_hat_mulvar_train<-predict(mulvar_model, data = train)
 predictions_train <- ifelse(y_hat_mulvar_train > 0.5, 1, 0)
-ModelTrain_mulvar <- data.frame(obs = train$survived, pred=predictions_train)
+ModelTrain_mulvar<-data.frame(obs = train$survived, pred=predictions_train)
 defaultSummary(ModelTrain_mulvar)
 
-y_hat_mulvar_test <- predict(mulvar_model, newdata = test, type="response")
+y_hat_mulvar_test<-predict(mulvar_model, newdata = test)
 predictions_test <- ifelse(y_hat_mulvar_test > 0.5, 1, 0)
-ModelTest_mulvar <- data.frame(obs = test$survived, pred=predictions_test)
+ModelTest_mulvar<-data.frame(obs = test$survived, pred=predictions_test)
 defaultSummary(ModelTest_mulvar)
 
-confusion_matrix_mulvar_train <- confusionMatrix(as.factor(predictions_train), as.factor(train$survived),mode="prec_recall", positive = "1")
-confusion_matrix_mulvar_train  
 
-confusion_matrix_mulvar_test <- confusionMatrix(as.factor(predictions_test), as.factor(test$survived),mode="prec_recall", positive = "1")
-confusion_matrix_mulvar_test  
-
-
-y_hat_log_train <- predict(lmod, data = train, type="response")
-predictions_log_train <- ifelse(y_hat_mulvar_train > 0.5, 1, 0)
-ModelTrain_lmod <- data.frame(obs = train$survived, pred=predictions_log_train)
+y_hat_log_train<-predict(lmod, data = train)
+ModelTrain_lmod<-data.frame(obs = train$survived, pred=y_hat_log_train)
 defaultSummary(ModelTrain_mulvar)
 
-y_hat_log_test<-predict(lmod, newdata = test, type="response")
-predictions_log_test <- ifelse(y_hat_log_test > 0.5, 1, 0)
-ModelTest_lmod<-data.frame(obs = test$survived, pred=predictions_log_test)
+y_hat_log_test<-predict(lmod, newdata = test)
+ModelTest_lmod<-data.frame(obs = test$survived, pred=y_hat_log_test)
 defaultSummary(ModelTest_lmod)
-
-confusion_matrix_log_train <- confusionMatrix(as.factor(predictions_log_train), as.factor(train$survived),mode="prec_recall", positive = "1")
-confusion_matrix_log_train  
-
-confusion_matrix_log_test <- confusionMatrix(as.factor(predictions_log_test), as.factor(test$survived),mode="prec_recall", positive = "1")
-confusion_matrix_log_test
-
-# We started creating the model by first looking at simple regression models. Creating simple regression models based on pclass_1 and sex_M resulted in the models being significant at 99.9% confidence level. However, a simple regression model based on age was not significant at even a 95% confidence level. From there, we created a multivariate regression model based on all of the variables in the train data set. Originally, we included deck_G in the multivariate model. However, the inclusion of deck_G was causing an issue due to the dummify process not correctly accounting for deck_T. After removing deck_G from the model, we were able to observe that the multivariate model was significant at a 99.9% confidence level. We then created a log model as we expect a log model to be better in this scenario. We experienced an issue when including deck_G in the log model, so we also removed this predictor variable from this model for the base model. This resulted in another significant model. It is interesting to note that the multivariate model and the log model perform equally well at predicting values on the train data. However, the multivariate model does slightly better at predicting survivors in the test data. In both models, age, pclass_1, pclass_2, sex_M, deck_E, and deck_F are significant at a 99.9% confidence level. Both models also show sibsp and deck_A being significant at a confidence level of at least 95%. The log model indicates that deck_C is significant at a 95% confidence level, while the multivariate model suggest that deck_C is not significant. Both models suggest that parch, fare, embarked_C, embarked_Q, deck_B, and deck_D are not significant variables. Since we are focusing on the log model moving forward, we also checked the Likelihood-ratio test. This test resulted in a value of 0, which indicates the variables in the model are important. We also looked at the Hosmer-Lemeshow test to determine the goodness of fit. This test resulted in a p-value of 0.5621, indicating that the model is a good fit. 
-```
-
-```{r Group scatterplots and correlation matrix}
-library(ggplot2)
-
-# Histogram showing that more people in their late teens up to late thirties survived.
-ggplot(train, aes(age)) +
-  geom_histogram(bins=30)
-
-# Bar chart showing that more females survived than males.
-ggplot(train, aes(sex_M, survived)) +
-  geom_bar(stat='identity')
-
-# Bar chart showing that a higher number of people survived when they had less siblings on board.
-ggplot(train, aes(sibsp, survived)) +
-  geom_bar(stat='identity')
-
-par(mfrow=c(2,2))
-plot(mulvar_model)
-# Plots show that a linear model is not appropriate for this data.
-
-par(mfrow=c(2,2))
-plot(lmod)
-# Plots show that a linear model is not appropriate for this data.
-
-ggplot(train, aes(survived)) +
-  geom_bar()
-
-ggplot(train, aes(pclass, survived)) +
-  geom_point()
-
-
-survival_by_sex <- train_titanic %>%
-  group_by(sex) %>%
-  summarize(survived_count = sum(survived))
-
-ggplot(survival_by_sex, aes(x= sex, y = survived_count, fill = factor(sex))) +
-  geom_bar(stat = 'identity') + 
-  scale_x_discrete(labels = c("0" = "Female", "1" = "Male")) +
-  scale_fill_discrete(labels = c("0" = "Female", "1" = "Male"), name = "Sex") +
-  geom_text(aes(label = survived_count), vjust = -0.5) +
-  labs(
-    title = "Number of People Who Survived by Sex",
-    x = "Sex",
-    y = "Survived",
-    fill = "Sex"
-  ) +
-  theme_minimal()
-
-ggplot(train_titanic, aes(age, survived)) +
-  geom_point()
-
-
-cor(train_titanic)
-pairs(train_titanic[c(1:4,7,13)])
-# Since this data is mainly categorical, the scatterplot and correlation matrix are not very useful.
 
 ```
 
@@ -734,12 +535,10 @@ This section will describe the model usage, your conclusions and any regulatory 
 ## I. Introduction (5 points)
 
 *This section needs to introduce the reader to the problem to be resolved, the purpose, and the scope of the statistical testing applied. What you are doing with your prediction? What is the purpose of the model? What methods were trained on the data, how large is the test sample, and how did you build the model?*
-
 The Titanic was a British-registered ship that set sail on its maiden voyage on April 10th, 1912 with 2,240 passengers and crew on board. On April 15th, 1912, the ship struck an iceberg, split in half, and sank to the bottom of the ocean (REF 1). In this report, we are going to analyze the data in the Titanic.csv file and use it to determine the best model for predicting whether someone on board would live or die. By creating this model, we hope to understand what factors a passenger could have taken into account in order to reduce their risk of death during the trip. We cleaned the data and split into into a train/test split in order to properly train our models. We created simple linear models, multivariate linear models, logistic models (both binomial and poisson), a regression tree, and a neural network model. The train sample size was 916 data points (70.03058%) and the test sample size was 392 data points (29.96942%). We built the models after examining the data and determining which predictor variables we thought would be most relevant for survival rate. Once we had our variables and training data, we created the models and examined the performance of the models on both training and testing data to determine if they were robust. We also examined if the model assumptions appeared to hold for each model.
 
-
 \newpage
-## II. Description of the data and quality (15 points)
+## I. Description of the data and quality (15 points)
 
 *Here you need to review your data, the statistical test applied to understand the predictors and the response and how are they correlated. Extensive graph analysis is recommended. Is the data continuous, or categorical, do any transformation needed? Do you need dummies? *
 
@@ -772,6 +571,7 @@ The Titanic was a British-registered ship that set sail on its maiden voyage on 
 *How would you picture the model needing to be monitored, which quantitative thresholds and triggers would you set to decide when the model needs to be replaced? What are the assumptions that the model must comply with for its continuous use?*
 In order to maintain the effectiveness of the model, we would need to continue to test it on new data. Since the Titanic was a rare event, we do not have a lot of new data to test on the model, but we can still be prepared in case new data were to become available. The first step in monitoring the model is to determine specific thresholds that we expect the model to stay above. We would want the model to maintain certain R^2, RMSE, and MAE values in order to determine that the model is working correctly. One of the biggest concerns with our model is data drift. Since the Titanic sank over 100 years ago, the data that we are using from the model may not align with today relevant to ship travel today. 
 
+
 \newpage
 ## VIII. Conclusion (5 points)
 
@@ -785,8 +585,6 @@ In order to maintain the effectiveness of the model, we would need to continue t
 (REF 2) "https://prepineer.com/s/binomial-distribution/#:~:text=It%20gives%20us%20the%20probability%20of%20getting%20r%20events%20in,an%20infinite%20number%20of%20trials."
 
 (REF 3) "https://www.evidentlyai.com/ml-in-production/model-monitoring"
-
-(REF 4) "https://www.statology.org/correlation-between-categorical-variables/"
 
 ## Appendix (3 points)
 
