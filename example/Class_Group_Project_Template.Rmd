@@ -81,7 +81,7 @@ If you have not group by the end of the week of April 11 you may present the pro
 **All results must be accurate and clearly explained for a casual reviewer to fully understand their purpose and impact**
 **Submit both the RMD markdown file and PDF with the sections with appropriate explanations. A more formal document in Word can be used in place of the pdf file but must include all appropriate explanations.**
 ```{r data loading and cleaning}
-titanic <- read.csv('/Users/Derek/Documents/Programming/HES/CSCI 106/Final Project/Titanic_Survival_Data.csv')
+titanic <- read.csv('Titanic_Survival_Data.csv')
 str(titanic)
 titanic <- titanic[-nrow(titanic), ]
 
@@ -383,7 +383,7 @@ defaultSummary(ModelTest_lmod)
 
 ```
 
-```{r my original model creation code}
+```{r Derek original model creation code}
 # Expected model structure: survived ~ pclass + Sex + sibsp + parch + ticket + fare + cabin + embarked
 
 simple_model1 <- lm(survived ~ pclass, data = train_titanic)
@@ -409,7 +409,7 @@ defaultSummary(ModelTest_mulvar)
 
 y_hat_log_train<-predict(lmod, data = train_titanic)
 ModelTrain_lmod<-data.frame(obs = train_titanic$survived, pred=y_hat_log_train)
-defaultSummary(ModelTrain_mulvar)
+defaultSummary(ModelTrain_lmod)
 
 y_hat_log_test<-predict(lmod, newdata = test_titanic)
 ModelTest_lmod<-data.frame(obs = test_titanic$survived, pred=y_hat_log_test)
@@ -507,6 +507,133 @@ Model Review
 - Multicollinearity test (vif)
 - BoxCox
 - Stepwise 
+
+***Write Up Draft Hao***
+
+* Bown-Forsythe Test Results:
+(Usually apply to linear only)
+Both Linear and Logistic Regression Model suggests no significant heteroskedasticity.
+
+Linear Model: F-Value 0.0558, p-value = 0.8133. Fail to to reject the null Hypothesis. No evidence of unequal variances. 
+Logistic Model: F-Value 0.0031, p-value = 0.9553. Fail to to reject the null Hypothesis. No evidence of unequal variances. 
+
+* Breusch Pagan Test:
+Both Linear and logistic Regression Model suggests no evidence of heteroskedasticity.
+
+Linear Model: Chi^2 3.31, p-value 0.069. Fail to reject Null hypothesis.
+Logistic Model: Chi^2 0.60, p-value 0.440. Fail to reject Null Hypothesis.
+
+
+* Shapiro-Wilk Test:
+Linear Model: W = 0.96, p-value <0.05. Reject H0, Residuals are not normal.
+
+* Large Leverage and Outlier Test
+Linear Model: Observation 92 was flagged as both an outlier and high-leverage point. 
+Logistic Model: Found more high-leverage points, but no single observations both appear as leverage and outlier.
+
+* Influential Point Test
+Many of the same observations were influential in both linear and logistic models.
+
+* Multicollinearity Test:
+The Variance Inflation Factors (VIF) for all predictors are around 1-2, below 5, indicating low levels of correlation.
+
+* BOX Cox transformation:
+
+Although the Shapiro-Wilk test indicated that the residuals from the linear model deviate from normality, there was no evidence of heteroskedasticity from either the Brown-Forsythe or Breusch-Pagan tests. In addition, multicollinearity levels were low, and influence diagnostics were carefully reviewed. As a result, no Box-Cox transformation was applied, as the assumptions of linear regression were reasonably satisfied, and the transformation would not add meaningful value in this context.
+
+* Stepwise:
+
+Both original model and stepwise models perform similarly on train and test data, no significant overfiting problem. Overall, logistic step model appears to be reasonable stable, and is preferred in classifying survival, despite higher errors.
+
+Linear Step Model:
+Y = 1.16 - 0.15pclass - 0.52sex - 0.0045age - 0.032sibsp + 0.12embarkedC + 0.16cabinE + 0.21cabinF"
+Logistic Step ModeL:
+Y = 4.13 - 0.99pclass - 2.8sex - 0.031age - 0.25sibsp + 0.79embarkedC + 1.1cabinE + 1.3cabinF
+
+
+| Model Type   | Version     | RMSE     | R-squared | MAE      |
+|--------------|-------------|----------|-----------|----------|
+| **Linear**   | Train       | 0.4482   | 0.3191    | 0.2009   |
+|              | Test        | 0.4759   | 0.2808    | 0.2265   |
+|              | Stepwise    | 0.4451   | 0.3163    | 0.1985   |
+|              | Step Test   | 0.4772   | 0.2776    | 0.2275   |
+| **Logistic** | Train       | 1.9644   | 0.3817    | 1.6320   |
+|              | Test        | 2.0007   | 0.3373    | 1.7287   |
+|              | Stepwise    | 1.9589   | 0.3790    | 1.6280   |
+|              | Step Test   | 1.9957   | 0.3352    | 1.7220   |
+
+
+```{r Hao Code Model Review}
+
+# Brown-Forsythe Test on Linear Model
+library(car)
+#Create the group variable based on fitted values.Smaller than 655 (half of training data size)- group1, else group2
+group <- ifelse(rank(fitted(mulvar_model)) <= 655, 1, 2)
+ei <- residuals(mulvar_model)
+leveneTest(ei, group, center=median)
+
+# Brown-Forsythe Test on Linear Model
+group <- ifelse(rank(fitted(lmod)) <= 655, 1, 2)
+ei <- residuals(lmod)
+leveneTest(ei, group, center=median)
+
+# Breusch Pagan Test on Linear Model
+ols_test_breusch_pagan(mulvar_model)
+# Breusch Pagan Test on Logistic Model
+ols_test_breusch_pagan(lmod)
+
+# Normality Test -- Performed in plot section after model.
+
+# Shapiro-Wilk test
+shapiro.test(residuals(mulvar_model))
+
+# Large Leverage Test and Outlier test
+###Studentized residuals vs leverage plot
+ols_plot_resid_lev(mulvar_model)
+ols_plot_resid_lev(lmod)
+
+# Influential Point Test
+### Cooks distance plot
+ols_plot_cooksd_bar(mulvar_model)
+ols_plot_cooksd_bar(lmod)
+
+
+# Run VIF on the logistic model
+cat("VIF Results for Logistic Regression Model \n")
+ols_vif_tol(lmod)
+
+```
+```{r Hao Code step model result and performance }
+#step model on both regression model
+mulvar_model_step <- step(mulvar_model, direction = "both")
+lmod_step <- step(lmod, direction = "both")
+
+summary(mulvar_model_step)
+summary(lmod_step)
+
+y_hat_mulvar_train<-predict(mulvar_model_step, data = train_titanic)
+predictions_train <- ifelse(y_hat_mulvar_train > 0.5, 1, 0)
+ModelTrain_mulvar_step<-data.frame(obs = train_titanic$survived, pred=predictions_train)
+defaultSummary(ModelTrain_mulvar_step)
+
+y_hat_mulvar_test<-predict(mulvar_model_step, newdata = test_titanic)
+predictions_test <- ifelse(y_hat_mulvar_test > 0.5, 1, 0)
+ModelTest_mulvar_step<-data.frame(obs = test_titanic$survived, pred=predictions_test)
+defaultSummary(ModelTest_mulvar_step)
+
+
+y_hat_log_train<-predict(lmod_step, data = train_titanic)
+ModelTrain_lmod_step<-data.frame(obs = train_titanic$survived, pred=y_hat_log_train)
+defaultSummary(ModelTrain_lmod_step)
+
+y_hat_log_test<-predict(lmod_step, newdata = test_titanic)
+ModelTest_lmod_step<-data.frame(obs = test_titanic$survived, pred=y_hat_log_test)
+defaultSummary(ModelTest_lmod_step)
+
+```
+
+
+
 
 
 Graphs for Final Model
