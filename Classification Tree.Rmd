@@ -1,0 +1,54 @@
+###Classification Tree - Titanic Survival###
+
+library(rpart.plot)
+library(pROC)
+library(caret)
+
+
+# 1. Fit Classification Tree Model
+tree_model <- rpart(survived ~ ., data = train, method = "class", cp = 0.01)
+
+#Visualize  tree
+rpart.plot(tree_model, type = 2, extra = 106, under = TRUE,
+           main = "Classification Tree for Titanic Survival")
+
+# 2. Predict on Test Set
+tree_preds <- predict(tree_model, newdata = test, type = "prob")[, 2]  # probability of survival
+tree_preds_class <- ifelse(tree_preds > 0.5, 1, 0)
+
+# 3. Confusion Matrix and Accuracy
+conf_mat_tree <- confusionMatrix(as.factor(tree_preds_class), as.factor(test$survived))
+print(conf_mat_tree)
+
+# 4. ROC Curve and AUC
+roc_tree <- roc(test$survived, tree_preds)
+auc_tree <- auc(roc_tree)
+cat("Tree AUC:", round(auc_tree, 3), "\n")
+plot(roc_tree, col = "darkgreen", main = "ROC Curve - Classification Tree")
+
+# 5. Prune Tree (Improve Generalization)
+#Plot CP table to see where to prune
+printcp(tree_model)
+plotcp(tree_model, main = "CP Table for Pruning")
+
+#Get optimal CP value that minimizes xerror
+optimal_cp <- tree_model$cptable[which.min(tree_model$cptable[,"xerror"]), "CP"]
+cat("Optimal CP for pruning:", optimal_cp, "\n")
+
+#Prune tree
+pruned_tree <- prune(tree_model, cp = optimal_cp)
+
+#Re-plot pruned tree
+rpart.plot(pruned_tree, type = 2, extra = 106, under = TRUE,
+           main = "Pruned Classification Tree")
+
+#Predict again using pruned tree
+pruned_preds <- predict(pruned_tree, newdata = test, type = "prob")[, 2]
+pruned_class <- ifelse(pruned_preds > 0.5, 1, 0)
+
+#Recalculate performance
+conf_mat_pruned <- confusionMatrix(as.factor(pruned_class), as.factor(test$survived))
+print(conf_mat_pruned)
+
+roc_pruned <- roc(test$survived, pruned_preds)
+cat("Pruned Tree AUC:", round(auc(roc_pruned), 3), "\n")
