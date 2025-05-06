@@ -1,0 +1,306 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+%
+\documentclass[
+  letterpaper,
+  DIV=11,
+  numbers=noendperiod]{scrartcl}
+
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else  
+    % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1.3cm]{geometry}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\setcounter{secnumdepth}{5}
+% Make \paragraph and \subparagraph free-standing
+\makeatletter
+\ifx\paragraph\undefined\else
+  \let\oldparagraph\paragraph
+  \renewcommand{\paragraph}{
+    \@ifstar
+      \xxxParagraphStar
+      \xxxParagraphNoStar
+  }
+  \newcommand{\xxxParagraphStar}[1]{\oldparagraph*{#1}\mbox{}}
+  \newcommand{\xxxParagraphNoStar}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+  \let\oldsubparagraph\subparagraph
+  \renewcommand{\subparagraph}{
+    \@ifstar
+      \xxxSubParagraphStar
+      \xxxSubParagraphNoStar
+  }
+  \newcommand{\xxxSubParagraphStar}[1]{\oldsubparagraph*{#1}\mbox{}}
+  \newcommand{\xxxSubParagraphNoStar}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+\makeatother
+
+
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+
+\KOMAoption{captions}{tableheading}
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\AtBeginDocument{%
+\ifdefined\contentsname
+  \renewcommand*\contentsname{Table of contents}
+\else
+  \newcommand\contentsname{Table of contents}
+\fi
+\ifdefined\listfigurename
+  \renewcommand*\listfigurename{List of Figures}
+\else
+  \newcommand\listfigurename{List of Figures}
+\fi
+\ifdefined\listtablename
+  \renewcommand*\listtablename{List of Tables}
+\else
+  \newcommand\listtablename{List of Tables}
+\fi
+\ifdefined\figurename
+  \renewcommand*\figurename{Figure}
+\else
+  \newcommand\figurename{Figure}
+\fi
+\ifdefined\tablename
+  \renewcommand*\tablename{Table}
+\else
+  \newcommand\tablename{Table}
+\fi
+}
+\@ifpackageloaded{float}{}{\usepackage{float}}
+\floatstyle{ruled}
+\@ifundefined{c@chapter}{\newfloat{codelisting}{h}{lop}}{\newfloat{codelisting}{h}{lop}[chapter]}
+\floatname{codelisting}{Listing}
+\newcommand*\listoflistings{\listof{codelisting}{List of Listings}}
+\makeatother
+\makeatletter
+\makeatother
+\makeatletter
+\@ifpackageloaded{caption}{}{\usepackage{caption}}
+\@ifpackageloaded{subcaption}{}{\usepackage{subcaption}}
+\makeatother
+
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage{bookmark}
+
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={HARVARD EXTENSION SCHOOL},
+  pdfauthor={Author: Dinesh Bedathuru; Author: Brian Calderon; Author: Jeisson Hernandez; Author: Hao Fu; Author: Derek Rush; Author: Jeremy Tajonera; Author: Catherine Tully},
+  colorlinks=true,
+  linkcolor={blue},
+  filecolor={Maroon},
+  citecolor={Blue},
+  urlcolor={Blue},
+  pdfcreator={LaTeX via pandoc}}
+
+
+\title{HARVARD EXTENSION SCHOOL}
+\usepackage{etoolbox}
+\makeatletter
+\providecommand{\subtitle}[1]{% add subtitle to \maketitle
+  \apptocmd{\@title}{\par {\large #1 \par}}{}{}
+}
+\makeatother
+\subtitle{EXT CSCI E-106 Model Data Class Group Project Template}
+\author{Author: Dinesh Bedathuru \and Author: Brian
+Calderon \and Author: Jeisson Hernandez \and Author: Hao Fu \and Author:
+Derek Rush \and Author: Jeremy Tajonera \and Author: Catherine Tully}
+\date{06 May 2025}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+In this project, our aim is to classify the probability of a passenger
+surviving the Titanic crash of 1912. We used a variety of linear and
+non-linear models to deduce the most accurate model and provide
+long-term stability in our predictions.
+\end{abstract}
+
+\renewcommand*\contentsname{Table of contents}
+{
+\hypersetup{linkcolor=}
+\setcounter{tocdepth}{2}
+\tableofcontents
+}
+
+\begin{verbatim}
+Size of entire data set: 1310 
+\end{verbatim}
+
+Classify whether a passenger on board the maiden voyage of the RMS
+Titanic in 1912 survived given their age, sex and class.
+Sample-Data-Titanic-Survival.csv to be used in the Final Project
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.5000}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Variable
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Description
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+pclass & \textbf{Passenger Class (1 = 1st; 2 = 2nd; 3 = 3rd)} \\
+survived & \textbf{Survival (0 = No; 1 = Yes)} \\
+name & \textbf{Name} \\
+sex & \textbf{Sex} \\
+age & \textbf{Age} \\
+sibsp & \textbf{\# of siblings / spouses aboard the Titanic} \\
+parch & \textbf{\# of parents / children aboard the Titanic} \\
+ticket & \textbf{Ticket number} \\
+fare & \textbf{Passenger fare} \\
+cabin & \textbf{Cabin number} \\
+embarked & \textbf{Port of Embarkation (C = Cherbourg; Q = Queenstown; S
+= Southampton)} \\
+boat & \textbf{Lifeboat ID, if passenger survived} \\
+body & \textbf{Body number (if passenger did not survive and body was
+recovered} \\
+home.dest & \textbf{The intended home destination of the passenger} \\
+\end{longtable}
+
+\section{Instructions:}\label{instructions}
+
+0. Join a team with your fellow students with appropriate size (Up to
+Nine Students total) If you have not group by the end of the week of
+April 11 you may present the project by yourself or I will randomly
+assign other stranded student to your group. I will let know the final
+groups in April 11.
+
+1. Load and Review the dataset named ``Titanic\_Survival\_Data.csv'' 2.
+Create the train data set which contains 70\% of the data and use
+set.seed (15). The remaining 30\% will be your test data set.
+
+3. Investigate the data and combine the level of categorical variables
+if needed and drop variables as needed. For example, you can drop id,
+Latitude, Longitude, etc.
+
+4. Build appropriate model to predict the probability of survival.
+
+5. Create scatter plots and a correlation matrix for the train data set.
+Interpret the possible relationship between the response.
+
+6. Build the best models by using the appropriate selection method.
+Compare the performance of the best logistic linear models.
+
+7. Make sure that model assumption(s) are checked for the final model.
+Apply remedy measures (transformation, etc.) that helps satisfy the
+assumptions.
+
+8. Investigate unequal variances and multicollinearity.
+
+9. Build an alternative to your model based on one of the following
+approaches as applicable to predict the probability of survival:
+logistic regression, classification Tree, NN, or SVM. Check the
+applicable model assumptions. Explore using a negative binomial
+regression and a Poisson regression.
+
+10. Use the test data set to assess the model performances from above.
+
+11. Based on the performances on both train and test data sets,
+determine your primary (champion) model and the other model which would
+be your benchmark model.
+
+12. Create a model development document that describes the model
+following this template, input the name of the authors, Harvard IDs, the
+name of the Group, all of your code and calculations, etc..
+
+\textbf{Due Date: May 12 2025 1159 pm hours EST Notes No typographical
+errors, grammar mistakes, or misspelled words, use English language All
+tables need to be numbered and describe their content in the body of the
+document All figures/graphs need to be numbered and describe their
+content All results must be accurate and clearly explained for a casual
+reviewer to fully understand their purpose and impact Submit both the
+RMD markdown file and PDF with the sections with appropriate
+explanations. A more formal.}
+
+\section{Executive Summary}\label{executive-summary}
+
+This section will describe the model usage, your conclusions and any
+regulatory and internal requirements. In a real world scneario, this
+section is for senior management who do not need to know the details.
+They need to know high level (the purpose of the model, limitations of
+the model and any issues).
+
+\section{I. Introduction (5 points)}\label{i.-introduction-5-points}
+
+This section needs to introduce the reader to the problem to be
+resolved, the purpose, and the scope of the statistical testing applied.
+What you are doing with your prediction? What is the purpose of the
+model? What methods were trained on the data, how large is the test
+sample, and how did you build the model?
+
+\begin{verbatim}
+[1] 4
+\end{verbatim}
+
+The \texttt{echo:\ false} option disables the printing of code (only
+output is displayed).
+
+
+
+
+\end{document}
