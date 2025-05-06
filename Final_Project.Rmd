@@ -163,25 +163,26 @@ data.clean$deck_F = ifelse(data.clean$deck == 'F', 1, 0)
 data.clean$deck_G = ifelse(data.clean$deck == 'G', 1, 0)
 
 # Dummifying sibsp:
-data.clean$sibsp_1 = ifelse(data.clean$sibsp == 1, 1, 0)
-data.clean$sibsp_2 = ifelse(data.clean$sibsp == 2, 1, 0)
-data.clean$sibsp_3 = ifelse(data.clean$sibsp == 3, 1, 0)
-data.clean$sibsp_4 = ifelse(data.clean$sibsp == 4, 1, 0)
-data.clean$sibsp_5 = ifelse(data.clean$sibsp == 5, 1, 0)
-data.clean$sibsp_8 = ifelse(data.clean$sibsp == 8, 1, 0)
+# NOTE: We found that using this as continuous leads to the best performance
+# data.clean$sibsp_1 = ifelse(data.clean$sibsp == 1, 1, 0)
+# data.clean$sibsp_2 = ifelse(data.clean$sibsp == 2, 1, 0)
+# data.clean$sibsp_3 = ifelse(data.clean$sibsp == 3, 1, 0)
+# data.clean$sibsp_4 = ifelse(data.clean$sibsp == 4, 1, 0)
+# data.clean$sibsp_5 = ifelse(data.clean$sibsp == 5, 1, 0)
+# data.clean$sibsp_8 = ifelse(data.clean$sibsp == 8, 1, 0)
 
 # Dummifying parch:
-data.clean$parch_1 = ifelse(data.clean$parch == 1, 1, 0)
-data.clean$parch_2 = ifelse(data.clean$parch == 2, 1, 0)
-data.clean$parch_3 = ifelse(data.clean$parch == 3, 1, 0)
-data.clean$parch_4 = ifelse(data.clean$parch == 4, 1, 0)
-data.clean$parch_5 = ifelse(data.clean$parch == 5, 1, 0)
-data.clean$parch_6 = ifelse(data.clean$parch == 6, 1, 0)
-data.clean$parch_9 = ifelse(data.clean$parch == 9, 1, 0)
+# NOTE: We found that using this as continuous leads to the best performance
+# data.clean$parch_1 = ifelse(data.clean$parch == 1, 1, 0)
+# data.clean$parch_2 = ifelse(data.clean$parch == 2, 1, 0)
+# data.clean$parch_3 = ifelse(data.clean$parch == 3, 1, 0)
+# data.clean$parch_4 = ifelse(data.clean$parch == 4, 1, 0)
+# data.clean$parch_5 = ifelse(data.clean$parch == 5, 1, 0)
+# data.clean$parch_6 = ifelse(data.clean$parch == 6, 1, 0)
+# data.clean$parch_9 = ifelse(data.clean$parch == 9, 1, 0)
 
 # Removing Dummified cols:
-data.clean = subset(data.clean, select  = -c(pclass, sex, embarked,deck, sibsp, 
-                                             parch))
+data.clean = subset(data.clean, select  = -c(pclass, sex, embarked,deck))
 
 ```
 ```{r}
@@ -217,48 +218,131 @@ test = data.clean[-train_indices,]
 cat("We are using:", nrow(train)/nrow(data.clean) * 100, '% of the data for training')
 ```
 
+```{r}
+# Plot histogram of the 'values' column
+hist(data.clean$deck_G,
+     main = "Histogram of Values",
+     xlab = "Values",
+     col = "skyblue",
+     border = "white")
+```
+
 
 ```{r}
 ################################################################################
-#                           Legacy Code                                        # 
+#              Function to remove Insig. Predictors one by one                 # 
 ################################################################################
 
-#Remove Unneeded Columns'
-# data <- odata[, !(names(odata) %in% c("name", "ticket", "boat","body","home.dest"))]
-# 
-# #Replace NAs in age column with Median value 
-# median_age <- median(data$age, na.rm = TRUE)
-# data <- data %>%
-#   mutate(age = ifelse(is.na(age), median_age, age))
-# 
-# #Extract deck letter from cabin
-# data$deck <- substr(data$cabin, 1,1)
-# data$cabin <- NULL
-# 
-# #Create dummy variables
-# data <- data %>%
-#   fastDummies :: dummy_cols(select_columns = c("sex", "embarked","deck"),
-#                             remove_selected_columns = TRUE)
-# 
-# # Remove NAs
-# data <-na.omit(data)
-# #head(data)
-# set.seed(15)
-# 
-# #split data into train and test
-# datasplit <- data %>%
-#   group_by(survived) %>%
-#   group_split() %>%
-#   lapply(function(df) sample(seq_len(nrow(df)), size = 0.7 * nrow(df))) %>%
-#   unlist()
-# 
-# data_train<-data[datasplit,]
-# data_test<-data[-datasplit,]
-# 
-# #check the data
-# cat("Training data set size:", nrow(data_train), "\n")
-# cat("Testing data set size:", nrow(data_test), "\n")
-# cat("Size of entire data set:", nrow(data), "\n")
-# head(data)
+backward_eliminate = function(model, alpha = 0.05) {
+  repeat {
+    d1 = drop1(model, test = "F")
+    
+    # Get p-values excluding intercept row
+    pvals = d1$`Pr(>F)`[-1]
+    
+    # Stop if all predictors are significant or only intercept left
+    if( all(is.na(pvals)) || max(pvals, na.rm = TRUE) <= alpha ){
+      print("all variable are signifcant")
+      break
+    } 
+    
+    # Remove the term with max p-value
+    term_to_remove = rownames(d1)[-1][which.max(pvals)]
+    cat("Removing:", term_to_remove, "with p-value", max(pvals, na.rm = TRUE), "\n")
+    model = update(model, paste(". ~ . -", term_to_remove))
+  }
+  return(model)
+}
 ```
+
+
+```{r}
+################################################################################
+#                           Fit initial log model                              # 
+################################################################################
+binary.model = glm(survived ~ ., family = binomial, data = train)
+summary(binary.model)
+# Removing deck_G from model since most data is 0 and is skewing results:
+binary.model = update(binary.model, paste(". ~ . -", 'deck_G'))
+summary(binary.model)
+
+################################################################################
+#                    Model with insig. variables removed                      # 
+################################################################################
+binary.model.filtered = backward_eliminate(binary.model)
+summary(binary.model.filtered)
+
+################################################################################
+#                step wise model with insig. variables removed                 # 
+################################################################################
+library(olsrr)
+
+ols_step_both_p(binary.model,p_enter=0.1,p_remove=0.05,details=FALSE)
+
+# Fit model with stepwise parms only:
+binary.model.stepwise = glm(survived ~ sex_M + deck_F  + age + deck_E  + 
+                              pclass_2 + pclass_1 + sibsp + fare, 
+                            family = binomial, data = train)
+summary(binary.model.stepwise)
+
+# Removing fare from stepwise model since its insig.:
+binary.model.stepwise = update(binary.model.stepwise, paste(". ~ . -", 'fare'))
+summary(binary.model.stepwise)
+
+################################################################################
+#                Model with influential points removed                         # 
+################################################################################
+# -------- Function to remove Cook's Outliers --------                        
+# model_formula: A formula object, e.g. PSA.level ~ .
+# data: A data frame containing the variables in the model.
+# threshold: A numeric value indicating the Cook's D threshold (default 0.5).
+# print: If TRUE (default) will print the rows beign removed.
+# returns: A list with the final model and the filtered dataset.
+# 
+# Example usage:
+# result = remove_cooks_outliers(PSA.level ~ ., mydata)
+# summary(result$model)
+# str(result$filtered_data)
+remove_cooks_outliers = function(model_formula, data, threshold = 0.5, 
+                                 print = TRUE) 
+  {
+  
+  all_high_cd_rows = data.frame()  # to store all removed rows
+
+  repeat {
+    model = glm(model_formula, family = binomial, data = data) 
+    cooksD = cooks.distance(model)
+    high_cd_indices = which(cooksD > threshold)
+    
+    if (length(high_cd_indices) == 0) { # If there are no more outliers
+      break
+    }
+    
+    if (print == TRUE){
+      cat("Removing rows with Cook's D >", threshold, ":\n", high_cd_indices, "\n")
+    }
+    # Save these outliers before removing them
+    high_cd_rows = data[high_cd_indices, ]
+    all_high_cd_rows = rbind(all_high_cd_rows, high_cd_rows)
+    
+    # Update data by removing high CD rows for next iteration.
+    data = data[-high_cd_indices, ]
+  }
+  
+  final_model = glm(model_formula, family = binomial, data = data)
+  return(list(model = final_model, filtered_data = data, high_cd_data = all_high_cd_rows))
+}
+
+# Applying function to remove influential points via Cooks Distance:
+filtering.result = remove_cooks_outliers(survived ~ . - deck_G, data = train)
+cat(nrow(filtering.result$high_cd_data),'rows were identified as outliers')
+
+plot(binary.model)
+
+# Since there were now rows identified as outliers, then this model will be the 
+# same as the initial binary model and need no be considered in the final 
+# model compare.
+
+```
+
 
