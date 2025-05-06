@@ -1,0 +1,55 @@
+<div>
+
+---
+title: "HARVARD EXTENSION SCHOOL"
+format: pdf
+subtitle: "EXT CSCI E-106 Model Data Class Group Project Template"
+author:
+- Author Dinesh Bedathuru
+- Author Brian Calderon
+- Author Jeisson Hernandez
+- Author Hao Fu
+- Author Derek Rush
+- Author Jeremy Tajonera
+- Author Catherine Tully
+
+tags: [logistic, neuronal networks, titanic]
+abstract: |
+   In this project our aim is to classisfy the probability of a passenger to survive the Titanic crash of 1912. We used a variety of linear and non-linear to deduce the most accurate model and provide the best long term stability in our predictions. 
+   
+date: "`r format(Sys.time(), '%d %B %Y')`"
+geometry: margin=1.3cm
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+  html_document:
+    df_print: paged
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+</div>
+
+## Quarto
+
+## Running Code
+
+When you click the **Render** button a document will be generated that
+includes both content and the output of embedded code. You can embed
+code like this:
+
+```{r}
+1 + 1
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is
+displayed).
