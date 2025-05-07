@@ -25,6 +25,8 @@ format:
     geometry: margin=1.3cm
     df-print: kable
     include-in-header: justify.tex # Justify all text
+    lof: true         # ← List of Figures
+    lot: true         # ← List of Tables
     
 tags: [logistic, neuronal networks, titanic]
 
@@ -46,12 +48,42 @@ csl: harvard-educational-review.csl # csl file for harvard style referencing
 
 </div>
 
-```{r echo=FALSE}
-#############################################################
-#                     Load Data                             #
-#############################################################
-odata <- read.csv("../data/Titanic_Survival_Data.csv")
-cat("Size of entire data set:", nrow(odata), "\n")
+```{r setup, include = FALSE}
+# Library loads
+library(ISLR2)
+library(tidyverse)
+library(caret)
+library(MASS)
+library(fastDummies)
+library(stringr)
+library(ggplot2)
+################################################################################
+#                  Function to plot missing data in DF                         #
+################################################################################
+
+plot_missing_barchart <- function(df) {
+  # Calculate % of NA or empty strings per column
+  na_empty_pct <- sapply(df, function(col) {
+    mean(is.na(col) | col == "")
+  }) * 100
+  
+  # Create a dataframe from the result
+  na_df <- data.frame(
+    Column = names(na_empty_pct),
+    PercentMissing = na_empty_pct
+  )
+  
+  # Plot the bar chart
+  p =  ggplot(na_df, aes(x = reorder(Column, -PercentMissing), 
+                           y = PercentMissing)) +
+          geom_bar(stat = "identity", fill = "steelblue") +
+          coord_flip() +
+          labs(title = "Percentage of NA or Empty Cells per Column",
+          x = "Column",
+          y = "Percentage (%)") +
+          theme_minimal()
+  return(p)
+}
 ```
 
 ::: pagebreak
@@ -188,6 +220,200 @@ understand the predictors and the response and how are they correlated.
 Extensive graph analysis is recommended. Is the data continuous, or
 categorical, do any transformation needed? Do you need dummies?
 
+## Loading the data
+
+```{r}
+odata <- read.csv("../data/Titanic_Survival_Data.csv")
+cat("Size of entire data set:", nrow(odata), "\n")
+```
+
+## Removing un-needed columns
+
+Name: Removing because names have no inference on surivival (inference)
+
+ticket: Ticket No. will also likely not have an influence in survival
+
+boat: This is highly correlated to the survival dependant variable since
+people who made it on a boat likely survived
+
+body: This is highly correlated to the survival dependant variable since
+people who's body was recovered did not survive.
+
+home.dest: The destination likely has nothing to do with the survival
+
+```{r}
+data.clean = odata[, !(names(odata) %in% c("name", "ticket", "boat","body","home.dest"))]
+```
+
+## Data Augmentation
+
+We extracted the deck letter from the cabin since it could potentially
+correlate to the survival.
+
+```{r}
+#Extract deck letter from cabin
+data.clean$deck <- substr(data.clean$cabin, 1,1)
+# Remove cabin col:
+data.clean$cabin <- NULL
+```
+
+## Initial Check for Missing values
+
+We see that age and deck have the most amount of missing data, therefore
+we proceed to impute them.
+
+```{r}
+#| fig-cap: "Percentage of Missing Values"
+print(plot_missing_barchart(data.clean))
+```
+
+## Imputing data
+
+Below we impute Age using the median value in that column.
+
+For deck we use KNN to impute the missing deck values.
+
+After imputing these two columns we can see that the largest amount of
+missing data is \~0.2% which is quite small and can be removed.
+
+```{r}
+# ---- Age----
+#Replace NAs in age column with Median value 
+median_age <- median(data.clean$age, na.rm = TRUE)
+data.clean <- data.clean %>%
+  mutate(age = ifelse(is.na(age), median_age, age))
+
+# ---- deck----
+# For deck, since its a category, we decided to use KNN  to impute the column:
+
+# Install if not already installed
+# install.packages("VIM")
+library(VIM)
+
+# Replace "" with NA in the 'deck' column
+data.clean$deck[data.clean$deck == ""] <- NA
+
+# Convert 'cabin' to factor
+data.clean$deck <- as.factor(data.clean$deck)
+
+# Apply kNN imputation just to Cabin column
+data.clean <- kNN(data.clean, variable = "deck", k = 5)
+
+# Check that NAs were imputed
+# sum(is.na(data.clean$deck))        # Original
+# sum(is.na(data.clean.imputed$deck)) # After
+
+# Remove indicator col:
+data.clean$deck_imp <- NULL
+```
+
+```{r}
+################################################################################
+#          Check for Missing values after Imputation                           #
+################################################################################
+# Function to calculate % of NA or empty strings per column
+#| fig-cap: "Percentage of Missing Values after Imputation"
+plot_missing_barchart(data.clean)
+```
+
+## Dummifying Columns:
+
+We dummify pclass, sex, embarked and deck. We leave sibsp and parch as
+continuous variables as we observed that dummifying these columns leads
+to smaller significance, whilst leaving them as continuous maximizes
+their contributions to the models explanatory power.
+
+```{r}
+# Dummifying pclass:
+data.clean$pclass_1 = ifelse(data.clean$pclass == 1, 1, 0)
+data.clean$pclass_2 = ifelse(data.clean$pclass == 2, 1, 0)
+
+# Dummifying sex:
+data.clean$sex_M = ifelse(data.clean$sex == 'male', 1, 0)
+
+# Dummifying embarked:
+data.clean$embarked_C = ifelse(data.clean$embarked == 'C', 1, 0)
+data.clean$embarked_Q = ifelse(data.clean$embarked == 'Q', 1, 0)
+
+# Dummifying deck:
+data.clean$deck_A = ifelse(data.clean$deck == 'A', 1, 0)
+data.clean$deck_B = ifelse(data.clean$deck == 'B', 1, 0)
+data.clean$deck_C = ifelse(data.clean$deck == 'C', 1, 0)
+data.clean$deck_D = ifelse(data.clean$deck == 'D', 1, 0)
+data.clean$deck_E = ifelse(data.clean$deck == 'E', 1, 0)
+data.clean$deck_F = ifelse(data.clean$deck == 'F', 1, 0)
+data.clean$deck_G = ifelse(data.clean$deck == 'G', 1, 0)
+
+# Removing Dummified cols:
+data.clean = subset(data.clean, select  = -c(pclass, sex, embarked,deck))
+```
+
+## Remove NA rows
+
+Below we remove NA rows, which turned out to be only 2 after proper
+cleaning and imputation.
+
+```{r}
+data.clean = na.omit(data.clean)
+
+cat(nrow(odata) - nrow(data.clean),'rows were removed from original dataset')
+```
+
+## Divide into Test / Train
+
+Finally we divide into 70% training data and 30% test data.
+
+```{r}
+train_indices = sample(1 : nrow(data.clean), size = 0.70*nrow(data.clean), replace = FALSE)
+train = data.clean[train_indices,]
+test = data.clean[-train_indices,]
+cat("We are using:", nrow(train)/nrow(data.clean) * 100, '% of the data for training')
+```
+
+## EDA
+
+Using the training data set we use a variety of method to draw some
+initial conclusions:
+
+-   Histogram: Showing that more people in their late teens up to late
+    thirties survived.
+
+```{r}
+# Histogram showing that more people in their late teens up to late thirties survived.
+ggplot(train, aes(age)) +
+  geom_histogram(bins=30)
+
+# Bar chart showing that more females survived than males.
+ggplot(train, aes(survived)) +
+  geom_bar()
+
+# Bar chart showing that a higher number of people survived when they had less siblings on board.
+ggplot(train, aes(sibsp, survived)) +
+  geom_bar(stat='identity')
+
+ggplot(train, aes(age, sibsp)) +
+  geom_point()
+
+ggplot(train, aes(age, fare)) +
+  geom_point()
+
+#install.packages("psych")
+library(psych) # Reference 4 to understand how this works
+tetrachoric(train[, c("survived", "sex_M")])
+tetrachoric(train[, c("survived", "pclass_1")])
+tetrachoric(train[, c("survived", "pclass_2")])
+
+#install.packages("rcompanion")
+library(rcompanion) # Reference 4 to understand how this works.
+cramerV(train$survived, train$sex)
+
+
+cor_matrix <- cor(train)#[,1]
+
+library(corrplot)
+corrplot(cor_matrix, method = "circle")
+```
+
 ::: pagebreak
 :::
 
@@ -274,3 +500,7 @@ why?
 :::
 
 # References
+
+# Appendix
+
+## A:
