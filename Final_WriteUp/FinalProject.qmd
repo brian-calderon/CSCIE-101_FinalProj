@@ -46,7 +46,7 @@ Titanic in 1912 survived given their age, sex and class.
 Sample-Data-Titanic-Survival.csv to be used in the Final Project
 
 | Variable | Description |
-|----|----|
+|------------------------------------|------------------------------------|
 | pclass | **Passenger Class (1 = 1st; 2 = 2nd; 3 = 3rd)** |
 | survived | **Survival (0 = No; 1 = Yes)** |
 | name | **Name** |
@@ -65,7 +65,7 @@ Sample-Data-Titanic-Survival.csv to be used in the Final Project
 ::: pagebreak
 :::
 
-# Instructions: 
+# Instructions:
 
 0\. Join a team with your fellow students with appropriate size (Up to
 Nine Students total) If you have not group by the end of the week of
@@ -141,6 +141,26 @@ resolved, the purpose, and the scope of the statistical testing applied.
 What you are doing with your prediction? What is the purpose of the
 model? What methods were trained on the data, how large is the test
 sample, and how did you build the model?
+
+The Titanic was a British-registered ship that set sail on its maiden
+voyage on April 10th, 1912 with 2,240 passengers and crew on board. On
+April 15th, 1912, the ship struck an iceberg, split in half, and sank to
+the bottom of the ocean (REF 1). In this report, we are going to analyze
+the data in the Titanic.csv file and use it to determine the best model
+for predicting whether someone on board would live or die. By creating
+this model, we hope to understand what factors a passenger could have
+taken into account in order to reduce their risk of death during the
+trip. We cleaned the data and split into into a train/test split in
+order to properly train our models. We created simple linear models,
+multivariate linear models, logistic models (both binomial and poisson),
+a regression tree, and a neural network model. The train sample size was
+916 data points (70.03058%) and the test sample size was 392 data points
+(29.96942%). We built the models after examining the data and
+determining which predictor variables we thought would be most relevant
+for survival rate. Once we had our variables and training data, we
+created the models and examined the performance of the models on both
+training and testing data to determine if they were robust. We also
+examined if the model assumptions appeared to hold for each model.
 
 ```{r}
 #| echo: false
