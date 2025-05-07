@@ -2,7 +2,9 @@
 
 ---
 title: "HARVARD EXTENSION SCHOOL"
+
 subtitle: "EXT CSCI E-106 Model Data Class Group Project Template"
+
 author:
   - "Author: Dinesh Bedathuru"
   - "Author: Brian Calderon"
@@ -11,21 +13,35 @@ author:
   - "Author: Derek Rush"
   - "Author: Jeremy Tajonera"
   - "Author: Catherine Tully"
+  
 date: "`r format(Sys.time(), '%d %B %Y')`"
+
 format:
-  pdf:
-    toc: true
-    number-sections: true
-    toc-depth: 2
+  pdf: # Output in pdf
+    toc: true # Include table of contents
+    number-sections: true # Number section headings
+    toc-depth: 2 # Include up to H2 in TOC
     keep-tex: true
     geometry: margin=1.3cm
     df-print: kable
+    include-in-header: justify.tex # Justify all text
+    
 tags: [logistic, neuronal networks, titanic]
+
 abstract: |
   In this project, our aim is to classify the probability of a passenger surviving the Titanic crash of 1912. We used a variety of linear and non-linear models to deduce the most accurate model and provide long-term stability in our predictions.
+  
 editor_options:
   markdown:
     wrap: 72
+    
+editor: 
+  markdown: 
+    wrap: 72
+    
+bibliography: references.bib # references file
+
+csl: harvard-educational-review.csl # csl file for harvard style referencing
 ---
 
 </div>
@@ -34,7 +50,7 @@ editor_options:
 #############################################################
 #                     Load Data                             #
 #############################################################
-odata <- read.csv("data/Titanic_Survival_Data.csv")
+odata <- read.csv("../data/Titanic_Survival_Data.csv")
 cat("Size of entire data set:", nrow(odata), "\n")
 ```
 
@@ -145,27 +161,116 @@ sample, and how did you build the model?
 The Titanic was a British-registered ship that set sail on its maiden
 voyage on April 10th, 1912 with 2,240 passengers and crew on board. On
 April 15th, 1912, the ship struck an iceberg, split in half, and sank to
-the bottom of the ocean (REF 1). In this report, we are going to analyze
-the data in the Titanic.csv file and use it to determine the best model
-for predicting whether someone on board would live or die. By creating
-this model, we hope to understand what factors a passenger could have
-taken into account in order to reduce their risk of death during the
-trip. We cleaned the data and split into into a train/test split in
-order to properly train our models. We created simple linear models,
-multivariate linear models, logistic models (both binomial and poisson),
-a regression tree, and a neural network model. The train sample size was
-916 data points (70.03058%) and the test sample size was 392 data points
-(29.96942%). We built the models after examining the data and
-determining which predictor variables we thought would be most relevant
-for survival rate. Once we had our variables and training data, we
-created the models and examined the performance of the models on both
+the bottom of the ocean [@noaa2023]. In this report, we are going to
+analyze the data in the Titanic.csv file and use it to determine the
+best model for predicting whether someone on board would live or die. By
+creating this model, we hope to understand what factors a passenger
+could have taken into account in order to reduce their risk of death
+during the trip. We cleaned the data and split into into a train/test
+split in order to properly train our models. We created simple linear
+models, multivariate linear models, logistic models (both binomial and
+poisson), a regression tree, and a neural network model. The train
+sample size was 916 data points (70.03%) and the test sample size was
+392 data points (29.97%). We built the models after examining the data
+and determining which predictor variables we thought would be most
+relevant for survival rate. Once we had our variables and training data,
+we created the models and examined the performance of the models on both
 training and testing data to determine if they were robust. We also
 examined if the model assumptions appeared to hold for each model.
 
-```{r}
-#| echo: false
-2 * 2
-```
+::: pagebreak
+:::
 
-The `echo: false` option disables the printing of code (only output is
-displayed).
+# II. Description of the data and quality
+
+Here you need to review your data, the statistical test applied to
+understand the predictors and the response and how are they correlated.
+Extensive graph analysis is recommended. Is the data continuous, or
+categorical, do any transformation needed? Do you need dummies?
+
+::: pagebreak
+:::
+
+# III. Model Development Process
+
+Build an appropriate model to predict probability of survival. And of
+course, create the train data set which contains 70% of the data and use
+set.seed (1023). The remaining 30% will be your test data set.
+Investigate the data and combine the level of categorical variables if
+needed and drop variables. For example, you can passenger name, cabin,
+etc..
+
+::: pagebreak
+:::
+
+# IV. Model Performance Testing
+
+Use the test data set to assess the model performances. Here, build the
+best model by using appropriate selection method. You may compare the
+performance of the best two logistic or other classification model
+selected. Apply remedy measures as applicable (transformation, etc.)
+that helps satisfy the assumptions of your particular model. Deeply
+investigate unequal variances and multicollinearity if warranted.
+
+::: pagebreak
+:::
+
+# V. Challenger Models
+
+Build an alternative model based on one of the following approaches to
+predict survival as applicable:logistic regression, decision tree, NN,
+or SVM, Poisson regression or negative binomial. Check the applicable
+model assumptions. Apply in-sample and out-of-sample testing, back
+testing and review the comparative goodness of fit of the candidate
+models. Describe step by step your procedure to get to the best model
+and why you believe it is fit for purpose.
+
+::: pagebreak
+:::
+
+# VI. Model Limitation and Assumptions
+
+Based on the performances on both train and test data sets, determine
+your primary (champion) model and the other model which would be your
+benchmark model. Validate your models using the test sample. Do the
+residuals look normal? Does it matter given your technique? How is the
+prediction performance using Pseudo Rˆ2, SSE, RMSE? Benchmark the model
+against alternatives. How good is the relative fit? Are there any
+serious violations of the logistic model assumptions? Has the model had
+issues or limitations that the user must know? (Which assumptions are
+needed to support the Champion model?)
+
+::: pagebreak
+:::
+
+# VII. Ongoing Model Monitoring Plan
+
+How would you picture the model needing to be monitored, which
+quantitative thresholds and triggers would you set to decide when the
+model needs to be replaced? What are the assumptions that the model must
+comply with for its continuous use?
+
+In order to maintain the effectiveness of the model, we would need to
+continue to test it on new data. Since the Titanic was a rare event, we
+do not have a lot of new data to test on the model, but we can still be
+prepared in case new data were to become available. The first step in
+monitoring the model is to determine specific thresholds that we expect
+the model to stay above. We would want the model to maintain certain
+R\^2, RMSE, and MAE values in order to determine that the model is
+working correctly. One of the biggest concerns with our model is data
+drift. Since the Titanic sank over 100 years ago, the data that we are
+using from the model may not align with today relevant to ship travel
+today.
+
+::: pagebreak
+:::
+
+# VIII. Conclusion
+
+Summarize your results here. What is the best model for the data and
+why?
+
+::: pagebreak
+:::
+
+# References
