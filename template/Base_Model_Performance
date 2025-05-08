@@ -1,0 +1,65 @@
+```{r Base Model - sibsp and parch as continuous}
+library(car)
+mulvar_model <- lm(survived ~ ., data = train)
+summary(mulvar_model)
+vif(mulvar_model)
+
+lmod <- glm(as.factor(survived) ~ ., family = binomial, data = train)
+summary(lmod) # Null deviance 1223.12 and Residual deviance 679.11
+vif(lmod)
+
+t_stat <- 1223.12 - 679.11
+df <- 15
+
+# Ho: Variables are not important
+# Ha: Variable are important
+
+1-pchisq(t_stat, df)
+
+# Since the value is 0, we reject Ho and fail to reject Ha. This means that at least some of the variables in the model are important. 
+
+anova(lmod, test="Chi")
+
+# Goodness of fit test
+# Ho: The model is a good fit
+# Ha: The model is not a good fit.
+library(ResourceSelection)
+hoslem.test(lmod$y,fitted(lmod),g=5)
+
+# The p-value of 0.5621 indicates that we fail to reject Ho. This indicates that the model is a good fit.
+
+y_hat_mulvar_train <- predict(mulvar_model, data = train, type="response")
+predictions_train <- ifelse(y_hat_mulvar_train > 0.5, 1, 0)
+ModelTrain_mulvar <- data.frame(obs = train$survived, pred=predictions_train)
+defaultSummary(ModelTrain_mulvar)
+
+y_hat_mulvar_test <- predict(mulvar_model, newdata = test, type="response")
+predictions_test <- ifelse(y_hat_mulvar_test > 0.5, 1, 0)
+ModelTest_mulvar <- data.frame(obs = test$survived, pred=predictions_test)
+defaultSummary(ModelTest_mulvar)
+
+confusion_matrix_mulvar_train <- confusionMatrix(as.factor(predictions_train), as.factor(train$survived),mode="prec_recall", positive = "1")
+confusion_matrix_mulvar_train  
+
+confusion_matrix_mulvar_test <- confusionMatrix(as.factor(predictions_test), as.factor(test$survived),mode="prec_recall", positive = "1")
+confusion_matrix_mulvar_test  
+
+
+y_hat_log_train <- predict(lmod, data = train, type="response")
+predictions_log_train <- ifelse(y_hat_log_train > 0.5, 1, 0)
+ModelTrain_lmod <- data.frame(obs = train$survived, pred=predictions_log_train)
+defaultSummary(ModelTrain_lmod)
+
+y_hat_log_test<-predict(lmod, newdata = test, type="response")
+predictions_log_test <- ifelse(y_hat_log_test > 0.5, 1, 0)
+ModelTest_lmod<-data.frame(obs = test$survived, pred=predictions_log_test)
+defaultSummary(ModelTest_lmod)
+
+confusion_matrix_log_train <- confusionMatrix(as.factor(predictions_log_train), as.factor(train$survived),mode="prec_recall", positive = "1")
+confusion_matrix_log_train  
+
+confusion_matrix_log_test <- confusionMatrix(as.factor(predictions_log_test), as.factor(test$survived),mode="prec_recall", positive = "1")
+confusion_matrix_log_test
+
+# We started creating the model by first looking at simple regression models. Creating simple regression models based on pclass_1 and sex_M resulted in the models being significant at 99.9% confidence level. However, a simple regression model based on age was not significant at even a 95% confidence level. From there, we created a multivariate regression model based on all of the variables in the train data set. Originally, we included deck_G in the multivariate model. However, the inclusion of deck_G was causing an issue due to the dummify process not correctly accounting for deck_T. After removing deck_G from the model, we were able to observe that the multivariate model was significant at a 99.9% confidence level. We then created a logistic model as we expect a logistic model to be better in this scenario. We experienced an issue when including deck_G in the logistic model, so we also removed this predictor variable from this model for the base model. This resulted in another significant model. It is interesting to note that the multivariate model and the logistic model perform equally well at predicting values on the train data. However, the multivariate model does slightly better at predicting survivors in the test data. In both models, age, pclass_1, pclass_2, sex_M, deck_E, and deck_F are significant at a 99.9% confidence level. Both models also show sibsp and deck_A being significant at a confidence level of at least 95%. The log model indicates that deck_C is significant at a 95% confidence level, while the multivariate model suggest that deck_C is not significant. Both models suggest that parch, fare, embarked_C, embarked_Q, deck_B, and deck_D are not significant variables. Since we are focusing on the logistic model moving forward, we also checked the Likelihood-ratio test. This test resulted in a value of 0, which indicates the variables in the model are important. We also looked at the Hosmer-Lemeshow test to determine the goodness of fit. This test resulted in a p-value of 0.5621, indicating that the model is a good fit. 
+```
