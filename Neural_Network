@@ -1,0 +1,31 @@
+```{r Neural Network}
+library(neuralnet)
+normalize <- function(x) {return((x - min(x)) / (max(x) - min(x)))}
+
+data1 <- train[c(2,5)]
+data2 <- train[-c(2,5)]
+NN_train <- as.data.frame(lapply(data1, normalize))
+train_norm <- cbind(NN_train,data2)
+
+nn_model <- neuralnet(survived ~ ., data = train_norm, hidden = c(1,1))
+plot(nn_model)
+
+unnormalize <- function(x) {return((x * (max(data.clean$survived)) -min(data.clean$survived)) + min(data.clean$survived))}
+
+model_results_train <- compute(nn_model, train_norm[-1])
+model_results_test <- compute(nn_model, test[-1])
+
+predicted_survived_train <- model_results_train$net.result
+PredictedTrain<-unnormalize(predicted_survived_train)
+ModelTrain<-data.frame(obs = train_norm$survived, pred=PredictedTrain)
+nn_sum <- defaultSummary(ModelTrain)
+nn_sum
+cor(predicted_survived_train, train_norm$survived)
+
+predicted_survived_test <- model_results_test$net.result
+PredictedTest<-unnormalize(predicted_survived_test)
+ModelTest<-data.frame(obs = test$survived, pred=PredictedTest)
+nn_sum_test <- defaultSummary(ModelTest)
+nn_sum_test
+cor(predicted_survived_test, test$survived)
+```
