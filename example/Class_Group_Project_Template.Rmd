@@ -692,6 +692,59 @@ The Titanic was a British-registered ship that set sail on its maiden voyage on 
 *Based on the performances on both train and test data sets, determine your primary (champion) model and the other model which would be your benchmark model. Validate your models using the test sample. Do the residuals look normal? Does it matter given your technique? How is the prediction performance using Pseudo R^2, SSE, RMSE?  Benchmark the model against alternatives. How good is the relative fit? Are there any serious violations of the logistic model assumptions? Has the model had issues or limitations that the user must know? (Which assumptions are needed to support the Champion model?)* 
 
 
+## VI. Model Limitation and Assumptions (15 points)
+
+*Based on the performances on both train and test data sets, determine your primary (champion) model and the other model which would be your benchmark model. Validate your models using the test sample. Do the residuals look normal? Does it matter given your technique? How is the prediction performance using Pseudo R^2, SSE, RMSE?  Benchmark the model against alternatives. How good is the relative fit? Are there any serious violations of the logistic model assumptions? Has the model had issues or limitations that the user must know? (Which assumptions are needed to support the Champion model?)* 
+
+The champion model selected is the filtered logistic regression model due to its superior test accuracy (84.44%) and F1 score (0.8778). The filtered logistic regression model was developed through backward elimination procedure, applied to the full base model. This process iteratively removed predictors with high p-values until only statistically significant predictors remained, based on threshold (p <0.05). The base model is used as the benchmark due to its similar performance and broader feature set.
+
+"Y = 5.56 - 0.055age - 0.23sibsp + 1pclass_1 + 1.9pclass_2 - 3.2sex_M + 0.84embarked_C + 0.86embarked_Q - 2.5deck_A - 1.9deck_B - 2.1deck_C - 3.1deck_D - 4.6deck_F"
+
+To further evaluate and benchmark the logistic regression models, we computed RMSE, R², and MAE using the predicted probabilities against the actual binary outcomes. While traditional R² is not appropriate for logistic models, these metrics provide insight into how well the predicted probabilities align with observed outcomes. The Filtered model appearss to have higher R² (0.4425>0.4342), lower RMSE(0.3945 < 0.3977) and MAE (0.1556 <0.1582). Additionally, model validation was done through train/test split with consistent performance across sets. The performance on test data and train data show minimal difference, indicating the model is robust, no overfitting problem.
+
+To evaluate the stability and fit of the base and filtered logistic regression models, we conducted residual-based tests on their linear analogs. While logistic regression does not formally require normally distributed or homoscedastic residuals, these tests offer insights into model specification quality and residual behavior. 
+
+Breusch-Pagan Test: Both models exhibit statistically significant heteroskedasticity (p < 0.01)
+
+Shapiro-Wilk Test: Both models show highly significant deviations from normality (p < 0.01)
+
+Both models show similar residual behavior, with slight heteroskedasticity and non-normality. These findings do not violate logistic regression assumptions but suggest the model could be further improved through additional transformations or interaction terms.
+
+Multicollinearity was significantly lower in the filtered model (max VIF: 3.69 vs. 16.63), supporting better generalization and interpretability. The VIF is less than 5, confirmed no severe multicollinearity.
+
+
+```{r Hao Code Model Review}
+
+library(car)
+
+# Normality Test
+# Breusch Pagan Test on Logistic Model
+BPtest_basemodel <- ols_test_breusch_pagan(lmod)
+BPtest_filtered.model <- ols_test_breusch_pagan(binary.model.filtered)
+
+# Shapiro-Wilk test
+SWtest_basemodel <- shapiro.test(residuals(lmod))
+SWtest_filteredmodel <- shapiro.test(residuals(binary.model.filtered))
+
+
+# Combine into unified rows
+diagnostics_summary <- data.frame(
+  Model = c("Base.model", "Filtered.model"),
+  BP_Statistic = c(BPtest_basemodel$bp, BPtest_filtered.model$bp),
+  BP_pvalue = c(BPtest_basemodel$p, BPtest_filtered.model$p),
+  Shapiro_W = c(SWtest_basemodel$statistic, SWtest_filteredmodel$statistic),
+  Shapiro_pvalue = c(SWtest_basemodel$p.value, SWtest_filteredmodel$p.value)
+)
+diagnostics_summary
+
+# Run VIF on the logistic model
+cat("VIF Results for Base Logistic Regression Model \n")
+ols_vif_tol(lmod)
+cat("VIF Results for Filtered Logistic Regression Model \n")
+ols_vif_tol(binary.model.filtered)
+
+```
+
 \newpage
 ## VII. Ongoing Model Monitoring Plan (5 points)
 
