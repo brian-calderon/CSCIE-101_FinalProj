@@ -745,6 +745,41 @@ ols_vif_tol(binary.model.filtered)
 
 ```
 
+```{r}
+# Base Model - Train
+observations.train <- train$survived
+y_hat_base_train <- predict(lmod, train, type = "response")
+pred_base_train <- ifelse(y_hat_base_train > optimal.cutoff[1], 1, 0)
+ModelTrain_base <- data.frame(obs = observations.train, pred = pred_base_train)
+log.train.base <- defaultSummary(ModelTrain_base)
+
+# Base Model - Test
+observations.test <- test$survived
+y_hat_base_test <- predict(lmod, test, type = "response")
+pred_base_test <- ifelse(y_hat_base_test > optimal.cutoff[1], 1, 0)
+ModelTest_base <- data.frame(obs = observations.test, pred = pred_base_test)
+log.test.base <- defaultSummary(ModelTest_base)
+
+# Base Model - Train
+observations.train <- train$survived
+y_hat_base_train <- predict(binary.model.filtered, train, type = "response")
+pred_base_train <- ifelse(y_hat_base_train > optimal.cutoff[1], 1, 0)
+ModelTrain_base <- data.frame(obs = observations.train, pred = pred_base_train)
+filtered.log.train.base <- defaultSummary(ModelTrain_base)
+
+# Base Model - Test
+observations.test <- test$survived
+y_hat_base_test <- predict(binary.model.filtered, test, type = "response")
+pred_base_test <- ifelse(y_hat_base_test > optimal.cutoff[1], 1, 0)
+ModelTest_base <- data.frame(obs = observations.test, pred = pred_base_test)
+filtered.test.base <- defaultSummary(ModelTest_base)
+
+
+data.frame(rbind(log.train.base,log.test.base,filtered.log.train.base,filtered.test.base))
+  
+```
+
+
 \newpage
 ## VII. Ongoing Model Monitoring Plan (5 points)
 
