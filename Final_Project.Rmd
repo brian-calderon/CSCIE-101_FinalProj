@@ -204,7 +204,7 @@ plot_missing_barchart(data.clean)
 ################################################################################
 
 # Diving the data into Training and Test
-# Sets the same seed for the random sampling after, usefull for reproducability. 
+# Sets the same seed for the random sampling after, useful for reproducability. 
 set.seed(567)
 # NOTE: sample() expects a vector as the first kwarg, so you can't pass it a
 # dataframe directly, so instead you feed it a vector with the number of rows 
@@ -255,44 +255,10 @@ backward_eliminate = function(model, alpha = 0.05) {
 }
 ```
 
-
 ```{r}
 ################################################################################
-#                           Fit initial log model                              # 
-################################################################################
-binary.model = glm(survived ~ ., family = binomial, data = train)
-summary(binary.model)
-# Removing deck_G from model since most data is 0 and is skewing results:
-binary.model = update(binary.model, paste(". ~ . -", 'deck_G'))
-summary(binary.model)
-
-################################################################################
-#                    Model with insig. variables removed                      # 
-################################################################################
-binary.model.filtered = backward_eliminate(binary.model)
-summary(binary.model.filtered)
-
-################################################################################
-#                step wise model with insig. variables removed                 # 
-################################################################################
-library(olsrr)
-
-ols_step_both_p(binary.model,p_enter=0.1,p_remove=0.05,details=FALSE)
-
-# Fit model with stepwise parms only:
-binary.model.stepwise = glm(survived ~ sex_M + deck_F  + age + deck_E  + 
-                              pclass_2 + pclass_1 + sibsp + fare, 
-                            family = binomial, data = train)
-summary(binary.model.stepwise)
-
-# Removing fare from stepwise model since its insig.:
-binary.model.stepwise = update(binary.model.stepwise, paste(". ~ . -", 'fare'))
-summary(binary.model.stepwise)
-
-################################################################################
-#                Model with influential points removed                         # 
-################################################################################
-# -------- Function to remove Cook's Outliers --------                        
+#                     Function to remove Cooks Outliers                        # 
+################################################################################                        
 # model_formula: A formula object, e.g. PSA.level ~ .
 # data: A data frame containing the variables in the model.
 # threshold: A numeric value indicating the Cook's D threshold (default 0.5).
@@ -332,7 +298,45 @@ remove_cooks_outliers = function(model_formula, data, threshold = 0.5,
   final_model = glm(model_formula, family = binomial, data = data)
   return(list(model = final_model, filtered_data = data, high_cd_data = all_high_cd_rows))
 }
+```
 
+
+```{r}
+################################################################################
+#                           Fit initial log model                              # 
+################################################################################
+binary.model = glm(survived ~ ., family = binomial, data = train)
+summary(binary.model)
+# Removing deck_G from model since most data is 0 and is skewing results:
+binary.model = update(binary.model, paste(". ~ . -", 'deck_G'))
+summary(binary.model)
+
+################################################################################
+#                    Model with insig. variables removed                      # 
+################################################################################
+binary.model.filtered = backward_eliminate(binary.model)
+summary(binary.model.filtered)
+
+################################################################################
+#                step wise model with insig. variables removed                 # 
+################################################################################
+library(olsrr)
+
+ols_step_both_p(binary.model,p_enter=0.1,p_remove=0.05,details=FALSE)
+
+# Fit model with stepwise parms only:
+binary.model.stepwise = glm(survived ~ sex_M + deck_F  + age + deck_E  + 
+                              pclass_2 + pclass_1 + sibsp + fare, 
+                            family = binomial, data = train)
+summary(binary.model.stepwise)
+
+# Removing fare from stepwise model since its insig.:
+binary.model.stepwise = update(binary.model.stepwise, paste(". ~ . -", 'fare'))
+summary(binary.model.stepwise)
+
+################################################################################
+#                Model with influential points removed                         # 
+################################################################################
 # Applying function to remove influential points via Cooks Distance:
 filtering.result = remove_cooks_outliers(survived ~ . - deck_G, data = train)
 cat(nrow(filtering.result$high_cd_data),'rows were identified as outliers')
@@ -345,4 +349,51 @@ plot(binary.model)
 
 ```
 
+```{r}
+# develop model matrix using test data, this is only used for the predictions on
+# the regularized models:
+x.test = model.matrix(siri ~., data = q1.test)
+
+# Get the predictions on non-regularized models:
+# NOTE: the data fed is just the test df and you use the kwarg "newdata"
+y_hat.mlr = predict(q1.model, newdata = q1.test)
+y_hat.stepwise = predict(q1.model.stepwise, newdata = q1.test)
+y_hat.robust = predict(q1.model.huber , newdata = q1.test)
+
+# Get prediction on regularized models:
+# NOTE: the data fed is a model matrix using the df and you use the kwarg "newx"
+y_hat.ridge = predict(q1.model.ridge, s = best.lambda.ridge, newx = x.test)
+y_hat.lasso = predict(q1.model.lasso, s = best.lambda.lasso, newx = x.test)
+y_hat.enet = predict(q1.model.elastic , s = best.lambda.enet, newx = x.test)
+
+# Model Performance on the test Data
+library(caret)
+
+## Linear Regression Model
+ModelTest.reg = data.frame(obs = q1.test$siri, pred= y_hat.mlr)
+reg = defaultSummary(ModelTest.reg)
+
+## Stepwise Regression Model
+ModelTest.stepwise = data.frame(obs = q1.test$siri, pred= y_hat.stepwise)
+stepwise = defaultSummary(ModelTest.stepwise)
+
+## Robust Regression Model
+ModelTest.robust = data.frame(obs = q1.test$siri, pred= y_hat.robust)
+robust = defaultSummary(ModelTest.robust)
+
+## Ridge Regression Model
+# NOTE: y_hat.ridge[,1] this converts the single col. matrix into a vector
+# that can be read made into a col. for the data.frame
+ModelTest.ridge = data.frame(obs = q1.test$siri, pred=y_hat.ridge[,1])
+ridge = defaultSummary(ModelTest.ridge)
+
+## Lasso Regression Model
+ModelTest.lasso<-data.frame(obs = q1.test$siri, pred=y_hat.lasso[,1])
+lasso<-defaultSummary(ModelTest.lasso)
+
+## Elastic Net Regression Model
+ModelTest.enet<-data.frame(obs = q1.test$siri, pred=y_hat.enet[,1])
+enet<-defaultSummary(ModelTest.enet)
+data.frame(rbind(reg, stepwise, robust, ridge, lasso, enet))
+```
 

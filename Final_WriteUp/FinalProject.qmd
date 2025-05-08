@@ -174,7 +174,7 @@ explanations. A more formal.**
 # Executive Summary
 
 This section will describe the model usage, your conclusions and any
-regulatory and internal requirements. In a real world scneario, this
+regulatory and internal requirements. In a real world scenario, this
 section is for senior management who do not need to know the details.
 They need to know high level (the purpose of the model, limitations of
 the model and any issues).
@@ -182,7 +182,7 @@ the model and any issues).
 ::: pagebreak
 :::
 
-# I. Introduction (5 points)
+# Introduction
 
 This section needs to introduce the reader to the problem to be
 resolved, the purpose, and the scope of the statistical testing applied.
@@ -213,12 +213,13 @@ examined if the model assumptions appeared to hold for each model.
 ::: pagebreak
 :::
 
-# II. Description of the data and quality
+# Description of the data and quality
 
-Here you need to review your data, the statistical test applied to
-understand the predictors and the response and how are they correlated.
-Extensive graph analysis is recommended. Is the data continuous, or
-categorical, do any transformation needed? Do you need dummies?
+Based on the data cleaning we were able to only remove 2 rows from the data set.
+We used median imputation as well as KNN for various columns. We also dummified 
+several categorical columns. We found that leaving sibsp and parch as continuous
+as opposed to categorical increased their contributions to the model performance
+[Appendix A](#appendix_A). Further, we also extracted the deck number and found that removing deck_G from the model increased its performance. 
 
 ## Loading the data
 
@@ -308,11 +309,11 @@ data.clean$deck_imp <- NULL
 ```
 
 ```{r}
+#| fig-cap: "Percentage of Missing Values after Imputation"
 ################################################################################
 #          Check for Missing values after Imputation                           #
 ################################################################################
-# Function to calculate % of NA or empty strings per column
-#| fig-cap: "Percentage of Missing Values after Imputation"
+
 plot_missing_barchart(data.clean)
 ```
 
@@ -320,8 +321,7 @@ plot_missing_barchart(data.clean)
 
 We dummify pclass, sex, embarked and deck. We leave sibsp and parch as
 continuous variables as we observed that dummifying these columns leads
-to smaller significance, whilst leaving them as continuous maximizes
-their contributions to the models explanatory power.
+to smaller significance [Appendix A](#appendix_A), whilst leaving them as continuous maximizes their contributions to the models explanatory power.
 
 ```{r}
 # Dummifying pclass:
@@ -348,14 +348,29 @@ data.clean$deck_G = ifelse(data.clean$deck == 'G', 1, 0)
 data.clean = subset(data.clean, select  = -c(pclass, sex, embarked,deck))
 ```
 
-## Remove NA rows
+## Remove NA rows and deck_G
 
 Below we remove NA rows, which turned out to be only 2 after proper
-cleaning and imputation.
+cleaning and imputation. We also removed deck_G as we observed that it
+has a large skew in the data distribution with only 13 people allocated
+in this deck. It was observed that this variable lead to erroneous
+predictions in the model.
+
+```{r}
+#| fig-cap: "Histogram of Deck_G"
+# Plot histogram of the 'values' column
+hist(data.clean$deck_G,
+     main = "Histogram of Values",
+     xlab = "Values",
+     col = "skyblue",
+     border = "white")
+
+# Removing deck_G col:
+data.clean = subset(data.clean, select  = -c(deck_G))
+```
 
 ```{r}
 data.clean = na.omit(data.clean)
-
 cat(nrow(odata) - nrow(data.clean),'rows were removed from original dataset')
 ```
 
@@ -364,7 +379,8 @@ cat(nrow(odata) - nrow(data.clean),'rows were removed from original dataset')
 Finally we divide into 70% training data and 30% test data.
 
 ```{r}
-train_indices = sample(1 : nrow(data.clean), size = 0.70*nrow(data.clean), replace = FALSE)
+set.seed (1023)
+train_indices = sample(1 : nrow(data.clean), size = 0.7005*nrow(data.clean), replace = FALSE)
 train = data.clean[train_indices,]
 test = data.clean[-train_indices,]
 cat("We are using:", nrow(train)/nrow(data.clean) * 100, '% of the data for training')
@@ -377,28 +393,52 @@ initial conclusions:
 
 -   Histogram: Showing that more people in their late teens up to late
     thirties survived.
+-   Bar chart showing that more people died than survived
+-   Bar chart showing that a higher number of people survived when they
+    had less siblings on board.
+-   Correlation matrix shows that sex and Deck_F are highly negatively
+    correlated to survival. There is a soft positive correlation to
+    pclass_1.
+-   There is a high correlation between pclass_1 and fare, this
+    justifies that one of these predictors can potentially be removed.
+-   The scatter plots did not give us much more information on the
+    relation between the predictors and the dependent variable.
 
 ```{r}
+#| fig-cap: "Histogram of survival vs age"
 # Histogram showing that more people in their late teens up to late thirties survived.
 ggplot(train, aes(age)) +
   geom_histogram(bins=30)
+```
 
-# Bar chart showing that more females survived than males.
+```{r}
+#| fig-cap: "Barchart of survival"
+# Bar chart showing that more people died than survived
 ggplot(train, aes(survived)) +
   geom_bar()
+```
 
-# Bar chart showing that a higher number of people survived when they had less siblings on board.
+```{r}
+#| fig-cap: "Barchart of survival vs Num. of siblings"
+# Bar chart showing that a higher number of people survived when they had less 
+# siblings on board.
 ggplot(train, aes(sibsp, survived)) +
   geom_bar(stat='identity')
+```
 
-ggplot(train, aes(age, sibsp)) +
-  geom_point()
+```{r}
+#| fig-cap: "Scatter plots of all variables in train data"
+cor(train)
+pairs(train[c(1:4,7,13)])
+# Since this data is mainly categorical, the scatterplot and correlation matrix are not very useful.
+```
 
-ggplot(train, aes(age, fare)) +
-  geom_point()
+[@statology2025] is used to develop the correlation values between our
+categorical columns. This describes the use of pysch and rcompanion.
 
+```{r}
 #install.packages("psych")
-library(psych) # Reference 4 to understand how this works
+library(psych) # [@statology2025] to understand how this works
 tetrachoric(train[, c("survived", "sex_M")])
 tetrachoric(train[, c("survived", "pclass_1")])
 tetrachoric(train[, c("survived", "pclass_2")])
@@ -406,42 +446,375 @@ tetrachoric(train[, c("survived", "pclass_2")])
 #install.packages("rcompanion")
 library(rcompanion) # Reference 4 to understand how this works.
 cramerV(train$survived, train$sex)
+```
 
-
-cor_matrix <- cor(train)#[,1]
-
+```{r}
+#| fig-cap: "Correlation Matrix"
 library(corrplot)
+cor_matrix <- cor(train)#[,1]
 corrplot(cor_matrix, method = "circle")
 ```
 
 ::: pagebreak
 :::
 
-# III. Model Development Process
+# Model Development Process
 
-Build an appropriate model to predict probability of survival. And of
-course, create the train data set which contains 70% of the data and use
-set.seed (1023). The remaining 30% will be your test data set.
-Investigate the data and combine the level of categorical variables if
-needed and drop variables. For example, you can passenger name, cabin,
-etc..
+The data was properly cleaned and divided into train/test in the prior
+section.
+
+Here we train a binary model. The Q-Q plot shows that the residuals are
+indeed normally distributed so a transformation is potentially not
+necessary.
+
+The statistical comparison between test and train data shows that the
+model is very stable with an accuracy of \~84% for both.
+
+We also analyzed the VIF and we see that there is high degree of
+correlation between the decks, this provides justification to remove
+some of the decks as predictors.
+
+```{r}
+library(car)
+
+# Log model on train data:
+lmod <- glm(survived ~ ., family = binomial, data = train)
+# summary(lmod)
+vif(lmod)
+
+```
+
+```{r}
+#| tbl-cap: ""
+y_hat_log_train <- predict(lmod, data = train, type="response")
+predictions_log_train <- ifelse(y_hat_log_train > 0.5, 1, 0)
+
+y_hat_log_test<-predict(lmod, newdata = test, type="response")
+predictions_log_test <- ifelse(y_hat_log_test > 0.5, 1, 0)
+
+confusion_matrix_log_train <- confusionMatrix(as.factor(predictions_log_train), as.factor(train$survived),mode="prec_recall", positive = "1")
+base.model.accuracy = confusion_matrix_log_train$overall['Accuracy']
+base.model.f1 = confusion_matrix_log_train$byClass['F1']
+base.model.train.summary = data.frame(
+  Accuracy = base.model.accuracy,
+  F1 = base.model.f1
+)
+row.names(base.model.train.summary) <- 'base.model.train'  
+
+
+
+confusion_matrix_log_test <- confusionMatrix(as.factor(predictions_log_test), as.factor(test$survived),mode="prec_recall", positive = "1")
+base.model.accuracy = confusion_matrix_log_test$overall['Accuracy']
+base.model.f1 = confusion_matrix_log_test$byClass['F1']
+base.model.test.summary = data.frame(
+  Accuracy = base.model.accuracy,
+  F1 = base.model.f1
+)
+row.names(base.model.test.summary) <- 'base.model.test'
+```
+
+```{r}
+#| tbl-cap: "Summary Stats. of base log. model"
+data.frame(rbind(base.model.train.summary, base.model.test.summary))
+```
+
+```{r}
+#| tbl-cap: "Summary of Base log Model using train data"
+summary(lmod)
+```
+
+```{r}
+#| fig-cap: "4x4 standard plots for log. model"
+par(mfrow=c(2,2))
+plot(lmod)
+# Plots show that a linear model is not appropriate for this data.
+```
 
 ::: pagebreak
 :::
 
-# IV. Model Performance Testing
+# Model Performance Testing
 
-Use the test data set to assess the model performances. Here, build the
-best model by using appropriate selection method. You may compare the
-performance of the best two logistic or other classification model
-selected. Apply remedy measures as applicable (transformation, etc.)
-that helps satisfy the assumptions of your particular model. Deeply
-investigate unequal variances and multicollinearity if warranted.
+We compare four different models: 1) Base log. model 2) Model with
+insig. pred. removed 3) Stepwise model 4) Model with high vif pred.
+removed
+
+When comparing the accuracy and F1 score on all models the base model
+was still the highest performer and we decided to use that as the
+champion model until now.
+
+```{r}
+################################################################################
+#              Function to remove Insig. Predictors one by one                 # 
+################################################################################
+
+backward_eliminate = function(model, alpha = 0.05) {
+  repeat {
+    d1 = drop1(model, test = "F")
+    
+    # Get p-values excluding intercept row
+    pvals = d1$`Pr(>F)`[-1]
+    
+    # Stop if all predictors are significant or only intercept left
+    if( all(is.na(pvals)) || max(pvals, na.rm = TRUE) <= alpha ){
+      print("all variable are signifcant")
+      break
+    } 
+    
+    # Remove the term with max p-value
+    term_to_remove = rownames(d1)[-1][which.max(pvals)]
+    cat("Removing:", term_to_remove, "with p-value", max(pvals, na.rm = TRUE), "\n")
+    model = update(model, paste(". ~ . -", term_to_remove))
+  }
+  return(model)
+}
+```
+
+```{r}
+################################################################################
+#                     Function to remove Cooks Outliers                        # 
+################################################################################                        
+# model_formula: A formula object, e.g. PSA.level ~ .
+# data: A data frame containing the variables in the model.
+# threshold: A numeric value indicating the Cook's D threshold (default 0.5).
+# print: If TRUE (default) will print the rows beign removed.
+# returns: A list with the final model and the filtered dataset.
+# 
+# Example usage:
+# result = remove_cooks_outliers(PSA.level ~ ., mydata)
+# summary(result$model)
+# str(result$filtered_data)
+remove_cooks_outliers = function(model_formula, data, threshold = 0.5, 
+                                 print = TRUE) 
+  {
+  
+  all_high_cd_rows = data.frame()  # to store all removed rows
+
+  repeat {
+    model = glm(model_formula, family = binomial, data = data) 
+    cooksD = cooks.distance(model)
+    high_cd_indices = which(cooksD > threshold)
+    
+    if (length(high_cd_indices) == 0) { # If there are no more outliers
+      break
+    }
+    
+    if (print == TRUE){
+      cat("Removing rows with Cook's D >", threshold, ":\n", high_cd_indices, "\n")
+    }
+    # Save these outliers before removing them
+    high_cd_rows = data[high_cd_indices, ]
+    all_high_cd_rows = rbind(all_high_cd_rows, high_cd_rows)
+    
+    # Update data by removing high CD rows for next iteration.
+    data = data[-high_cd_indices, ]
+  }
+  
+  final_model = glm(model_formula, family = binomial, data = data)
+  return(list(model = final_model, filtered_data = data, high_cd_data = all_high_cd_rows))
+}
+```
+
+```{r}
+################################################################################
+#                    Model with insig. variables removed                      # 
+################################################################################
+binary.model.filtered = backward_eliminate(lmod)
+
+################################################################################
+#                step wise model with insig. variables removed                 # 
+################################################################################
+library(olsrr)
+
+ols_step_both_p(lmod,p_enter=0.1,p_remove=0.05,details=FALSE)
+
+# Fit model with stepwise parms only:
+binary.model.stepwise = glm(survived ~ sex_M + deck_F  + age + deck_E  + 
+                              pclass_2 + pclass_1 + sibsp + fare, 
+                            family = binomial, data = train)
+summary(binary.model.stepwise)
+
+# Removing fare from stepwise model since its insig.:
+binary.model.stepwise = update(binary.model.stepwise, paste(". ~ . -", 'fare'))
+summary(binary.model.stepwise)
+
+################################################################################
+#                Model with influential points removed                         # 
+################################################################################
+# Applying function to remove influential points via Cooks Distance:
+filtering.result = remove_cooks_outliers(survived ~ ., data = train)
+cat(nrow(filtering.result$high_cd_data),'rows were identified as outliers')
+
+# plot(logmod)
+
+# Since there were now rows identified as outliers, then this model will be the 
+# same as the initial binary model and need no be considered in the final 
+# model compare.
+
+################################################################################
+#                Model with high VIF preds removed                             # 
+################################################################################
+library(car)
+vif(lmod)
+
+vif.model = glm(survived ~ . -deck_F, family = binomial, data = train)
+vif(vif.model)
+
+# Removing deck_F from the model eliminates the multicollinearity completely. 
+```
+
+```{r}
+################################################################################
+#                         Function to calc. cutoff                             # 
+################################################################################
+cutoff.prg<-function(pred,act){
+# pred<-predicted_probabilities
+# act<-true_labels
+p<-seq(0,1,0.01)
+n<-length(p)
+out<-matrix(0,nrow=n,ncol=12)
+for(i in 1:n){
+predictions <- ifelse(pred >p[i], 1, 0)
+confusion_matrix <- confusionMatrix(as.factor(predictions),as.factor(act),mode="prec_recall", positive = "1")
+out[i,]<-cbind(p=p[i],t(confusion_matrix[[4]]))
+}
+dimnames(out)[[2]]<-c("p","Sensitivity","Specificity","Pos Pred Value","Neg Pred Value","Precision","Recall", "F1","Prevalence","Detection Rate","Detection Prevalence", "Balanced Accuracy")
+out
+}
+```
+
+```{r}
+# Finding the optimal cutoff
+observations = train$survived
+prob <- predict(lmod, train, type="response")
+
+test_cutoff<-cutoff.prg(prob,observations)
+plot(test_cutoff[,1],test_cutoff[,8],xlab="cut off",ylab="F1")
+optimal.cutoff = test_cutoff[which.max(test_cutoff[,8]),]
+optimal.cutoff[1]
+```
+
+```{r}
+observations.train = train$survived
+observations.test = test$survived
+
+# Confusion matrix on base log model on train data
+y_hat_prob = predict(lmod, train, type="response")
+predictions.binary.model.train <- ifelse(y_hat_prob > optimal.cutoff[1], 1, 0)
+confusion.matrix.binary.model.train <- confusionMatrix(as.factor(predictions.binary.model.train),as.factor(observations.train),mode="prec_recall", positive = "1")
+base.model.accuracy = confusion.matrix.binary.model.train$overall['Accuracy']
+base.model.f1 = confusion.matrix.binary.model.train$byClass['F1']
+base.model.train.summary = data.frame(
+  Accuracy = base.model.accuracy,
+  F1 = base.model.f1
+)
+row.names(base.model.train.summary) <- 'base.model.train'
+
+# Confusion matrix on base log model on test data
+y_hat_prob = predict(lmod, test, type="response")
+
+predictions.binary.model.test <- ifelse(y_hat_prob > optimal.cutoff[1], 1, 0)
+
+confusion.matrix.binary.model.test <- confusionMatrix(as.factor(predictions.binary.model.test),as.factor(observations.test), positive = "1")
+
+base.model.accuracy.test = confusion.matrix.binary.model.test$overall['Accuracy']
+base.model.f1.test = confusion.matrix.binary.model.test$byClass['F1']
+
+base.model.test.summary = data.frame(
+  Accuracy = base.model.accuracy.test,
+  F1 = base.model.f1.test
+)
+row.names(base.model.test.summary) <- 'base.model.test'
+
+# Confusion matrix on stepwise log model on train data
+y_hat_prob = predict(binary.model.stepwise, train, type="response")
+predictions.binary.model.step.train <- ifelse(y_hat_prob > optimal.cutoff[1], 1, 0)
+confusion.matrix.binary.model.step.train <- confusionMatrix(as.factor(predictions.binary.model.step.train),as.factor(observations.train),mode="prec_recall", positive = "1")
+stepwise.model.accuracy = confusion.matrix.binary.model.step.train$overall['Accuracy']
+stepwise.model.f1 = confusion.matrix.binary.model.step.train$byClass['F1']
+stepwise.model.train.summary = data.frame(
+  Accuracy = stepwise.model.accuracy,
+  F1 = stepwise.model.f1
+)
+row.names(stepwise.model.train.summary) <- 'stepwise.model.train'
+
+# Confusion matrix on stepwise log model on test data
+y_hat_prob = predict(binary.model.stepwise, test, type="response")
+predictions.binary.model.step.test <- ifelse(y_hat_prob > optimal.cutoff[1], 1, 0)
+confusion.matrix.binary.model.step.test <- confusionMatrix(as.factor(predictions.binary.model.step.test),as.factor(observations.test),mode="prec_recall", positive = "1")
+stepwise.model.accuracy = confusion.matrix.binary.model.step.test$overall['Accuracy']
+stepwise.model.f1 = confusion.matrix.binary.model.step.test$byClass['F1']
+stepwise.model.test.summary = data.frame(
+  Accuracy = stepwise.model.accuracy,
+  F1 = stepwise.model.f1
+)
+row.names(stepwise.model.test.summary) <- 'stepwise.model.test'
+
+# Confusion matrix on log model w/ insig. pred. removed
+y_hat_prob = predict(binary.model.filtered, train, type="response")
+predictions.binary.model.filtered.train <- ifelse(y_hat_prob > optimal.cutoff[1], 1, 0)
+confusion.matrix.binary.model.filtered.train <- confusionMatrix(as.factor(predictions.binary.model.filtered.train),as.factor(observations.train),mode="prec_recall", positive = "1")
+filtered.model.accuracy = confusion.matrix.binary.model.filtered.train$overall['Accuracy']
+filtered.model.f1 = confusion.matrix.binary.model.filtered.train$byClass['F1']
+filtered.model.train.summary = data.frame(
+  Accuracy = filtered.model.accuracy,
+  F1 = filtered.model.f1
+)
+row.names(filtered.model.train.summary) <- 'filtered.model.train'
+
+# Confusion matrix on log model w/ insig. pred. removed
+y_hat_prob = predict(binary.model.filtered, test, type="response")
+
+predictions.binary.model.filtered.test <- ifelse(y_hat_prob > optimal.cutoff[1], 1, 0)
+
+confusion.matrix.binary.model.filtered.test <- confusionMatrix(as.factor(predictions.binary.model.filtered.test),as.factor(observations.test),mode="prec_recall", positive = "1")
+
+filtered.model.accuracy = confusion.matrix.binary.model.filtered.test$overall['Accuracy']
+filtered.model.f1 = confusion.matrix.binary.model.filtered.test$byClass['F1']
+
+filtered.model.test.summary = data.frame(
+  Accuracy = filtered.model.accuracy,
+  F1 = filtered.model.f1
+)
+row.names(filtered.model.test.summary) <- 'filtered.model.test'
+
+# Confusion matrix on log model w/ high vif pred. removed
+y_hat_prob = predict(vif.model, train, type="response")
+predictions.binary.model.vif.train <- ifelse(y_hat_prob > optimal.cutoff[1], 1, 0)
+confusion.matrix.binary.model.vif.train <- confusionMatrix(as.factor(predictions.binary.model.vif.train),as.factor(observations.train),mode="prec_recall", positive = "1")
+vif.model.accuracy = confusion.matrix.binary.model.vif.train$overall['Accuracy']
+vif.model.f1 = confusion.matrix.binary.model.vif.train$byClass['F1']
+vif.model.train.summary = data.frame(
+  Accuracy = vif.model.accuracy,
+  F1 = vif.model.f1
+)
+row.names(vif.model.train.summary) <- 'vif.model.train'
+
+# Confusion matrix on log model w/ high vif pred. removed
+y_hat_prob = predict(vif.model, test, type="response")
+predictions.binary.model.vif.test <- ifelse(y_hat_prob > optimal.cutoff[1], 1, 0)
+confusion.matrix.binary.model.vif.test <- confusionMatrix(as.factor(predictions.binary.model.vif.test),as.factor(observations.test),mode="prec_recall", positive = "1")
+vif.model.accuracy = confusion.matrix.binary.model.vif.test$overall['Accuracy']
+vif.model.f1 = confusion.matrix.binary.model.vif.test$byClass['F1']
+vif.model.test.summary = data.frame(
+  Accuracy = vif.model.accuracy,
+  F1 = vif.model.f1
+)
+row.names(vif.model.test.summary) <- 'vif.model.test'
+```
+
+```{r}
+#| tbl-cap: "Comparison of all log models performance"
+data.frame(rbind(base.model.train.summary, base.model.test.summary, 
+                 stepwise.model.train.summary, stepwise.model.test.summary,
+                 filtered.model.train.summary, filtered.model.test.summary,
+                 vif.model.train.summary,vif.model.test.summary))
+```
 
 ::: pagebreak
 :::
 
-# V. Challenger Models
+# Challenger Models
 
 Build an alternative model based on one of the following approaches to
 predict survival as applicable:logistic regression, decision tree, NN,
@@ -451,30 +824,166 @@ testing and review the comparative goodness of fit of the candidate
 models. Describe step by step your procedure to get to the best model
 and why you believe it is fit for purpose.
 
+```{r poisson}
+library(MASS)
+
+# Train base Poisson model:
+poissonReg <- glm(survived ~ .,family=poisson, train)
+summary(poissonReg)
+
+# compare the fitted model to the null model
+1-pchisq(672.34-390.72, length(coef(poissonReg)))
+
+anova(poissonReg,test="Chi")
+drop1(poissonReg,test="Chi")
+
+# Testing against test data
+predicted_probs <- predict(poissonReg, newdata = test, type = "response")
+
+# Get the results of different cutoff values
+testResult<-cutoff.prg(predicted_probs,test$survived)
+
+# We get get the optimal p cut off value based on the maximum F1 score
+plot(testResult[,1],testResult[,8],xlab="cut off",ylab="F1")
+testResult[which.max(testResult[,8]),]
+
+```
+
 ::: pagebreak
 :::
 
-# VI. Model Limitation and Assumptions
+# Model Limitation and Assumptions
 
-Based on the performances on both train and test data sets, determine
-your primary (champion) model and the other model which would be your
-benchmark model. Validate your models using the test sample. Do the
-residuals look normal? Does it matter given your technique? How is the
-prediction performance using Pseudo Rˆ2, SSE, RMSE? Benchmark the model
-against alternatives. How good is the relative fit? Are there any
-serious violations of the logistic model assumptions? Has the model had
-issues or limitations that the user must know? (Which assumptions are
-needed to support the Champion model?)
+The champion model selected is the filtered logistic regression model
+due to its superior train accuracy (85.04%) and F1 score (0.8099). The
+filtered logistic regression model was developed through backward
+elimination procedure, applied to the full base model. This process
+iteratively removed predictors with high p-values until only
+statistically significant predictors remained, based on threshold (p
+\<0.05). The base model is used as the benchmark due to its similar
+performance and broader feature set.
+
+"Survived = 5.56 - 0.055age - 0.23sibsp + 1pclass_1 + 1.9pclass_2 -
+3.2sex_M + 0.84embarked_C + 0.86embarked_Q - 2.5deck_A - 1.9deck_B -
+2.1deck_C - 3.1deck_D - 4.6deck_F"
+
+To further evaluate and benchmark the logistic regression models, we
+computed RMSE, R², and MAE using the predicted probabilities against the
+actual binary outcomes. While traditional R² is not appropriate for
+logistic models, these metrics provide insight into how well the
+predicted probabilities align with observed outcomes. The Filtered model
+appears to have higher R² (0.4425\>0.4342), lower RMSE(0.3945 \< 0.3977)
+and MAE (0.1556 \<0.1582). Additionally, model validation was done
+through train/test split with consistent performance across sets. The
+performance on test data and train data show minimal difference,
+indicating the model is robust, no overfitting problem.
+
+To evaluate the stability and fit of the base and filtered logistic
+regression models, we conducted residual-based tests on their linear
+analogs. While logistic regression does not formally require normally
+distributed or homoscedastic residuals, these tests offer insights into
+model specification quality and residual behavior.
+
+Breusch-Pagan Test: Both models exhibit statistically significant
+heteroskedasticity (p \< 0.01)
+
+Shapiro-Wilk Test: Both models show highly significant deviations from
+normality (p \< 0.01)
+
+Both models show similar residual behavior, with slight
+heteroskedasticity and non-normality. These findings do not violate
+logistic regression assumptions but suggest the model could be further
+improved through additional transformations or interaction terms.
+
+Multicollinearity was significantly lower in the filtered model (max
+VIF: 3.69 vs. 16.63), supporting better generalization and
+interpretability. The VIF is less than 5, confirmed no severe
+multicollinearity.
+
+```{r Hao Code Model Review}
+library(car)
+
+# Normality Test
+# Breusch Pagan Test on Logistic Model
+BPtest_basemodel <- ols_test_breusch_pagan(lmod)
+BPtest_filtered.model <- ols_test_breusch_pagan(binary.model.filtered)
+
+# Shapiro-Wilk test
+SWtest_basemodel <- shapiro.test(residuals(lmod))
+SWtest_filteredmodel <- shapiro.test(residuals(binary.model.filtered))
+
+
+# Combine into unified rows
+diagnostics_summary <- data.frame(
+  Model = c("Base.model", "Filtered.model"),
+  BP_Statistic = c(BPtest_basemodel$bp, BPtest_filtered.model$bp),
+  BP_pvalue = c(BPtest_basemodel$p, BPtest_filtered.model$p),
+  Shapiro_W = c(SWtest_basemodel$statistic, SWtest_filteredmodel$statistic),
+  Shapiro_pvalue = c(SWtest_basemodel$p.value, SWtest_filteredmodel$p.value)
+)
+```
+
+
+```{r}
+#| tbl-cap: "Summary of Diagnostic tests on Filtered vs Base models"
+diagnostics_summary
+```
+
+
+```{r}
+#| tbl-cap: "VIF Results for Base Logistic Regression Model"
+# Run VIF on the logistic model
+ols_vif_tol(lmod)
+```
+
+
+```{r}
+#| tbl-cap: "VIF Results for Filtered Logistic Regression Model"
+ols_vif_tol(binary.model.filtered)
+```
+
+```{r}
+# Base Model - Train
+observations.train <- train$survived
+y_hat_base_train <- predict(lmod, train, type = "response")
+pred_base_train <- ifelse(y_hat_base_train > optimal.cutoff[1], 1, 0)
+ModelTrain_base <- data.frame(obs = observations.train, pred = pred_base_train)
+log.train.base <- defaultSummary(ModelTrain_base)
+
+# Base Model - Test
+observations.test <- test$survived
+y_hat_base_test <- predict(lmod, test, type = "response")
+pred_base_test <- ifelse(y_hat_base_test > optimal.cutoff[1], 1, 0)
+ModelTest_base <- data.frame(obs = observations.test, pred = pred_base_test)
+log.test.base <- defaultSummary(ModelTest_base)
+
+# Base Model - Train
+observations.train <- train$survived
+y_hat_base_train <- predict(binary.model.filtered, train, type = "response")
+pred_base_train <- ifelse(y_hat_base_train > optimal.cutoff[1], 1, 0)
+ModelTrain_base <- data.frame(obs = observations.train, pred = pred_base_train)
+filtered.log.train.base <- defaultSummary(ModelTrain_base)
+
+# Base Model - Test
+observations.test <- test$survived
+y_hat_base_test <- predict(binary.model.filtered, test, type = "response")
+pred_base_test <- ifelse(y_hat_base_test > optimal.cutoff[1], 1, 0)
+ModelTest_base <- data.frame(obs = observations.test, pred = pred_base_test)
+filtered.test.base <- defaultSummary(ModelTest_base)
+```
+
+
+```{r}
+#| tbl-cap: "Comparison of stats between base and filtered log models:"
+data.frame(rbind(log.train.base,log.test.base,filtered.log.train.base,filtered.test.base))
+  
+```
 
 ::: pagebreak
 :::
 
-# VII. Ongoing Model Monitoring Plan
+# Ongoing Model Monitoring Plan
 
-How would you picture the model needing to be monitored, which
-quantitative thresholds and triggers would you set to decide when the
-model needs to be replaced? What are the assumptions that the model must
-comply with for its continuous use?
 
 In order to maintain the effectiveness of the model, we would need to
 continue to test it on new data. Since the Titanic was a rare event, we
@@ -491,7 +1000,7 @@ today.
 ::: pagebreak
 :::
 
-# VIII. Conclusion
+# Conclusion
 
 Summarize your results here. What is the best model for the data and
 why?
@@ -499,8 +1008,291 @@ why?
 ::: pagebreak
 :::
 
+# Appendix A: Check if 'sibsp' and 'parch' should be continuous or categorical {.unnumbered .toc-entry #appendix_A}
+
+We don't see significant improvement between modeling these predictors as
+continuous or categorical, therefore we decided to leave them as
+continuous.
+
+```{r Group model creation code - sibsp and parch as individual categories}
+library(car)
+data.clean.ap1 = odata[, !(names(odata) %in% c("name", "ticket", "boat","body","home.dest"))]
+
+################################################################################
+#                           Data Augmentation                                  #   
+################################################################################
+#Extract deck letter from cabin
+data.clean.ap1$deck <- substr(data.clean.ap1$cabin, 1,1)
+
+# Remove cabin col:
+data.clean.ap1$cabin <- NULL
+
+################################################################################
+#                           Imputing data                                      #   
+################################################################################
+
+# ---- Age----
+#Replace NAs in age column with Median value 
+median_age <- median(data.clean.ap1$age, na.rm = TRUE)
+data.clean.ap1 <- data.clean.ap1 %>%
+  mutate(age = ifelse(is.na(age), median_age, age))
+
+# ---- deck----
+# For deck, since its a category, we decided to use KNN  to impute the column:
+
+# Install if not already installed
+# install.packages("VIM")
+library(VIM)
+
+# Replace "" with NA in the 'deck' column
+data.clean.ap1$deck[data.clean.ap1$deck == ""] <- NA
+
+# Convert 'cabin' to factor
+data.clean.ap1$deck <- as.factor(data.clean.ap1$deck)
+
+# Apply kNN imputation just to Cabin column
+data.clean.ap1 <- kNN(data.clean.ap1, variable = "deck", k = 5)
+
+# Check that NAs were imputed
+# sum(is.na(data.clean$deck))        # Original
+# sum(is.na(data.clean.imputed$deck)) # After
+
+# Remove indicator col:
+data.clean.ap1$deck_imp <- NULL
+
+################################################################################
+#                           Dummify Cat. cols                                  # 
+################################################################################
+
+# Dummifying pclass:
+data.clean.ap1$pclass_1 = ifelse(data.clean.ap1$pclass == 1, 1, 0)
+data.clean.ap1$pclass_2 = ifelse(data.clean.ap1$pclass == 2, 1, 0)
+
+# Dummifying sex:
+data.clean.ap1$sex_M = ifelse(data.clean.ap1$sex == 'male', 1, 0)
+
+# Dummifying embarked:
+data.clean.ap1$embarked_C = ifelse(data.clean.ap1$embarked == 'C', 1, 0)
+data.clean.ap1$embarked_Q = ifelse(data.clean.ap1$embarked == 'Q', 1, 0)
+
+# Dummifying deck:
+data.clean.ap1$deck_A = ifelse(data.clean.ap1$deck == 'A', 1, 0)
+data.clean.ap1$deck_B = ifelse(data.clean.ap1$deck == 'B', 1, 0)
+data.clean.ap1$deck_C = ifelse(data.clean.ap1$deck == 'C', 1, 0)
+data.clean.ap1$deck_D = ifelse(data.clean.ap1$deck == 'D', 1, 0)
+data.clean.ap1$deck_E = ifelse(data.clean.ap1$deck == 'E', 1, 0)
+data.clean.ap1$deck_F = ifelse(data.clean.ap1$deck == 'F', 1, 0)
+#data.clean.ap1$deck_G = ifelse(data.clean.ap1$deck == 'G', 1, 0) # removed due to causing issues
+
+# Dummifying sibsp:
+data.clean.ap1$sibsp_1 = ifelse(data.clean.ap1$sibsp == 1, 1, 0)
+data.clean.ap1$sibsp_2 = ifelse(data.clean.ap1$sibsp == 2, 1, 0)
+data.clean.ap1$sibsp_3 = ifelse(data.clean.ap1$sibsp == 3, 1, 0)
+data.clean.ap1$sibsp_4 = ifelse(data.clean.ap1$sibsp == 4, 1, 0)
+data.clean.ap1$sibsp_5 = ifelse(data.clean.ap1$sibsp == 5, 1, 0)
+#data.clean.ap1$sibsp_8 = ifelse(data.clean.ap1$sibsp == 8, 1, 0) # removed due to causing issues
+
+# Dummifying parch:
+data.clean.ap1$parch_1 = ifelse(data.clean.ap1$parch == 1, 1, 0)
+data.clean.ap1$parch_2 = ifelse(data.clean.ap1$parch == 2, 1, 0)
+data.clean.ap1$parch_3 = ifelse(data.clean.ap1$parch == 3, 1, 0)
+data.clean.ap1$parch_4 = ifelse(data.clean.ap1$parch == 4, 1, 0)
+data.clean.ap1$parch_5 = ifelse(data.clean.ap1$parch == 5, 1, 0)
+data.clean.ap1$parch_6 = ifelse(data.clean.ap1$parch == 6, 1, 0)
+#data.clean.ap1$parch_9 = ifelse(data.clean.ap1$parch == 9, 1, 0) # removed due to causing issues
+
+# Removing Dummified cols:
+data.clean.ap1 = subset(data.clean.ap1, select  = -c(pclass, sex, embarked, deck))#, sibsp, parch))
+
+data.clean.ap1 = na.omit(data.clean.ap1)
+
+cat(nrow(odata) - nrow(data.clean.ap1),'rows were removed from original dataset')
+
+set.seed(567)
+train_indices_ap1 = sample(1 : nrow(data.clean.ap1), size = 0.7005*nrow(data.clean.ap1), replace = FALSE)
+train.ap1 = data.clean.ap1[train_indices_ap1,]
+test.ap1 = data.clean.ap1[-train_indices_ap1,]
+cat("We are using:", nrow(train.ap1)/nrow(data.clean.ap1) * 100, '% of the data for training')
+
+mulvar_model.ap1 <- lm(survived ~ ., data = train.ap1)
+summary(mulvar_model.ap1)
+vif(mulvar_model.ap1)
+
+lmod.ap1 <- glm(as.factor(survived) ~ ., family = binomial, data = train.ap1)
+summary(lmod.ap1)
+vif(lmod.ap1)
+
+y_hat_mulvar_train.ap1<-predict(mulvar_model.ap1, data = train.ap1)
+predictions_train.ap1 <- ifelse(y_hat_mulvar_train.ap1 > 0.5, 1, 0)
+ModelTrain_mulvar.ap1<-data.frame(obs = train.ap1$survived, pred=predictions_train.ap1)
+linear.train.ap1 <- defaultSummary(ModelTrain_mulvar.ap1)
+
+y_hat_mulvar_test.ap1<-predict(mulvar_model.ap1, newdata = test.ap1)
+predictions_test.ap1 <- ifelse(y_hat_mulvar_test.ap1 > 0.5, 1, 0)
+ModelTest_mulvar.ap1<-data.frame(obs = test.ap1$survived, pred=predictions_test.ap1)
+linear.test.ap1 <- defaultSummary(ModelTest_mulvar.ap1)
+
+
+y_hat_log_train.ap1<-predict(lmod.ap1, data = train.ap1)
+predictions_log_train.ap1 <- ifelse(y_hat_log_train.ap1 > 0.5, 1, 0)
+ModelTrain_lmod.ap1<-data.frame(obs = train.ap1$survived, pred=predictions_log_train.ap1)
+log.train.ap1 <- defaultSummary(ModelTrain_lmod.ap1)
+
+y_hat_log_test.ap1<-predict(lmod.ap1, newdata = test.ap1)
+predictions_log_test.ap1 <- ifelse(y_hat_log_test.ap1 > 0.5, 1, 0)
+ModelTest_lmod.ap1<-data.frame(obs = test.ap1$survived, pred=predictions_log_test.ap1)
+log.test.ap1 <- defaultSummary(ModelTest_lmod.ap1)
+
+data.frame(rbind(linear.train.ap1,linear.test.ap1,log.train.ap1,log.test.ap1))
+
+
+confusion_matrix_mulvar_train.ap1 <- confusionMatrix(as.factor(predictions_train.ap1), as.factor(train.ap1$survived),mode="prec_recall", positive = "1")
+confusion_matrix_mulvar_train.ap1
+
+confusion_matrix_mulvar_test.ap1 <- confusionMatrix(as.factor(predictions_test.ap1), as.factor(test.ap1$survived),mode="prec_recall", positive = "1")
+confusion_matrix_mulvar_test.ap1  
+
+confusion_matrix_log_train.ap1 <- confusionMatrix(as.factor(predictions_log_train.ap1), as.factor(train.ap1$survived),mode="prec_recall", positive = "1")
+confusion_matrix_log_train.ap1
+
+confusion_matrix_log_test.ap1 <- confusionMatrix(as.factor(predictions_log_test.ap1), as.factor(test.ap1$survived),mode="prec_recall", positive = "1")
+confusion_matrix_log_test.ap1
+```
+
+```{r Group model creation code - sibsp and parch as 2 categories}
+library(car)
+data.clean.ap2 = odata[, !(names(odata) %in% c("name", "ticket", "boat","body","home.dest"))]
+
+################################################################################
+#                           Data Augmentation                                  #   
+################################################################################
+#Extract deck letter from cabin
+data.clean.ap2$deck <- substr(data.clean.ap2$cabin, 1,1)
+
+# Remove cabin col:
+data.clean.ap2$cabin <- NULL
+
+################################################################################
+#                           Imputing data                                      #   
+################################################################################
+
+# ---- Age----
+#Replace NAs in age column with Median value 
+median_age <- median(data.clean.ap2$age, na.rm = TRUE)
+data.clean.ap2 <- data.clean.ap2 %>%
+  mutate(age = ifelse(is.na(age), median_age, age))
+
+# ---- deck----
+# For deck, since its a category, we decided to use KNN  to impute the column:
+
+# Install if not already installed
+# install.packages("VIM")
+library(VIM)
+
+# Replace "" with NA in the 'deck' column
+data.clean.ap2$deck[data.clean.ap2$deck == ""] <- NA
+
+# Convert 'cabin' to factor
+data.clean.ap2$deck <- as.factor(data.clean.ap2$deck)
+
+# Apply kNN imputation just to Cabin column
+data.clean.ap2 <- kNN(data.clean.ap2, variable = "deck", k = 5)
+
+# Check that NAs were imputed
+# sum(is.na(data.clean$deck))        # Original
+# sum(is.na(data.clean.imputed$deck)) # After
+
+# Remove indicator col:
+data.clean.ap2$deck_imp <- NULL
+
+
+################################################################################
+#                           Dummify Cat. cols                                  # 
+################################################################################
+
+# Dummifying pclass:
+data.clean.ap2$pclass_1 = ifelse(data.clean.ap2$pclass == 1, 1, 0)
+data.clean.ap2$pclass_2 = ifelse(data.clean.ap2$pclass == 2, 1, 0)
+
+# Dummifying sex:
+data.clean.ap2$sex_M = ifelse(data.clean.ap2$sex == 'male', 1, 0)
+
+# Dummifying embarked:
+data.clean.ap2$embarked_C = ifelse(data.clean.ap2$embarked == 'C', 1, 0)
+data.clean.ap2$embarked_Q = ifelse(data.clean.ap2$embarked == 'Q', 1, 0)
+
+# Dummifying deck:
+data.clean.ap2$deck_A = ifelse(data.clean.ap2$deck == 'A', 1, 0)
+data.clean.ap2$deck_B = ifelse(data.clean.ap2$deck == 'B', 1, 0)
+data.clean.ap2$deck_C = ifelse(data.clean.ap2$deck == 'C', 1, 0)
+data.clean.ap2$deck_D = ifelse(data.clean.ap2$deck == 'D', 1, 0)
+data.clean.ap2$deck_E = ifelse(data.clean.ap2$deck == 'E', 1, 0)
+data.clean.ap2$deck_F = ifelse(data.clean.ap2$deck == 'F', 1, 0)
+#data.clean.ap2$deck_G = ifelse(data.clean.ap2$deck == 'G', 1, 0) # removed due to causing issues
+
+# Dummifying sibsp to 2 categories:
+data.clean.ap2$sibsp_y = ifelse(data.clean.ap2$sibsp > 0, 1, 0)
+
+# Dummifying parch to 2 categories:
+data.clean.ap2$parch_y = ifelse(data.clean.ap2$parch > 0, 1, 0)
+
+# Removing Dummified cols:
+data.clean.ap2 = subset(data.clean.ap2, select  = -c(pclass, sex, embarked, deck))#, sibsp, parch))
+
+data.clean.ap2 = na.omit(data.clean.ap2)
+
+cat(nrow(odata) - nrow(data.clean.ap2),'rows were removed from original dataset')
+
+set.seed(567)
+train_indices_ap2 = sample(1 : nrow(data.clean.ap2), size = 0.7005*nrow(data.clean.ap2), replace = FALSE)
+train.ap2 = data.clean.ap2[train_indices_ap2,]
+test.ap2 = data.clean.ap2[-train_indices_ap2,]
+cat("We are using:", nrow(train.ap2)/nrow(data.clean.ap2) * 100, '% of the data for training')
+
+mulvar_model.ap2 <- lm(survived ~ ., data = train.ap2)
+summary(mulvar_model.ap2)
+vif(mulvar_model.ap2)
+
+lmod.ap2 <- glm(as.factor(survived) ~ ., family = binomial, data = train.ap2)
+summary(lmod.ap2)
+vif(lmod.ap2)
+
+y_hat_mulvar_train.ap2<-predict(mulvar_model.ap2, data = train.ap2)
+predictions_train.ap2 <- ifelse(y_hat_mulvar_train.ap2 > 0.5, 1, 0)
+ModelTrain_mulvar.ap2<-data.frame(obs = train.ap2$survived, pred=predictions_train.ap2)
+linear.train.ap2 <- defaultSummary(ModelTrain_mulvar.ap2)
+
+y_hat_mulvar_test.ap2<-predict(mulvar_model.ap2, newdata = test.ap2)
+predictions_test.ap2 <- ifelse(y_hat_mulvar_test.ap2 > 0.5, 1, 0)
+ModelTest_mulvar.ap2<-data.frame(obs = test.ap2$survived, pred=predictions_test.ap2)
+linear.test.ap2 <- defaultSummary(ModelTest_mulvar.ap2)
+
+
+y_hat_log_train.ap2<-predict(lmod.ap2, data = train.ap2)
+predictions_log_train.ap2 <- ifelse(y_hat_log_train.ap2 > 0.5, 1, 0)
+ModelTrain_lmod.ap2<-data.frame(obs = train.ap2$survived, pred=y_hat_log_train.ap2)
+log.train.ap2 <- defaultSummary(ModelTrain_mulvar.ap2)
+
+y_hat_log_test.ap2<-predict(lmod.ap2, newdata = test.ap2)
+predictions_log_test.ap2 <- ifelse(y_hat_log_test.ap2 > 0.5, 1, 0)
+ModelTest_lmod.ap2<-data.frame(obs = test.ap2$survived, pred=predictions_log_test.ap2)
+log.test.ap2 <- defaultSummary(ModelTest_lmod.ap2)
+
+
+data.frame(rbind(linear.train.ap2,linear.test.ap2,log.train.ap2,log.test.ap2))
+
+
+confusion_matrix_mulvar_train.ap2 <- confusionMatrix(as.factor(predictions_train.ap2), as.factor(train.ap2$survived),mode="prec_recall", positive = "1")
+confusion_matrix_mulvar_train.ap2
+
+confusion_matrix_mulvar_test.ap2 <- confusionMatrix(as.factor(predictions_test.ap2), as.factor(test.ap2$survived),mode="prec_recall", positive = "1")
+confusion_matrix_mulvar_test.ap2
+
+confusion_matrix_log_train.ap2 <- confusionMatrix(as.factor(predictions_log_train.ap2), as.factor(train.ap2$survived),mode="prec_recall", positive = "1")
+confusion_matrix_log_train.ap2
+
+confusion_matrix_log_test.ap2 <- confusionMatrix(as.factor(predictions_log_test.ap2), as.factor(test.ap2$survived),mode="prec_recall", positive = "1")
+confusion_matrix_log_test.ap2
+```
+
 # References
-
-# Appendix
-
-## A:
