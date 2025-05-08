@@ -1,4 +1,4 @@
-```{r Appendix - sibsp and parch as individual categories}
+```{r Group model creation code - sibsp and parch as individual categories}
 library(car)
 data.clean.ap1 = odata[, !(names(odata) %in% c("name", "ticket", "boat","body","home.dest"))]
 
@@ -49,7 +49,7 @@ data.clean.ap1$parch_6 = ifelse(data.clean.ap1$parch == 6, 1, 0)
 #data.clean.ap1$parch_9 = ifelse(data.clean.ap1$parch == 9, 1, 0) # removed due to causing issues
 
 # Removing Dummified cols:
-data.clean.ap1 = subset(data.clean.ap1, select  = -c(pclass, sex, embarked, deck, deck_imp, sibsp, parch))
+data.clean.ap1 = subset(data.clean.ap1, select  = -c(pclass, sex, embarked, deck, deck_imp))#, sibsp, parch))
 
 data.clean.ap1 = na.omit(data.clean.ap1)
 
@@ -81,17 +81,32 @@ linear.test.ap1 <- defaultSummary(ModelTest_mulvar.ap1)
 
 
 y_hat_log_train.ap1<-predict(lmod.ap1, data = train.ap1)
-ModelTrain_lmod.ap1<-data.frame(obs = train.ap1$survived, pred=y_hat_log_train.ap1)
+predictions_log_train.ap1 <- ifelse(y_hat_log_train.ap1 > 0.5, 1, 0)
+ModelTrain_lmod.ap1<-data.frame(obs = train.ap1$survived, pred=predictions_log_train.ap1)
 log.train.ap1 <- defaultSummary(ModelTrain_lmod.ap1)
 
 y_hat_log_test.ap1<-predict(lmod.ap1, newdata = test.ap1)
-ModelTest_lmod.ap1<-data.frame(obs = test.ap1$survived, pred=y_hat_log_test.ap1)
+predictions_log_test.ap1 <- ifelse(y_hat_log_test.ap1 > 0.5, 1, 0)
+ModelTest_lmod.ap1<-data.frame(obs = test.ap1$survived, pred=predictions_log_test.ap1)
 log.test.ap1 <- defaultSummary(ModelTest_lmod.ap1)
 
 data.frame(rbind(linear.train.ap1,linear.test.ap1,log.train.ap1,log.test.ap1))
+
+
+confusion_matrix_mulvar_train.ap1 <- confusionMatrix(as.factor(predictions_train.ap1), as.factor(train.ap1$survived),mode="prec_recall", positive = "1")
+confusion_matrix_mulvar_train.ap1
+
+confusion_matrix_mulvar_test.ap1 <- confusionMatrix(as.factor(predictions_test.ap1), as.factor(test.ap1$survived),mode="prec_recall", positive = "1")
+confusion_matrix_mulvar_test.ap1  
+
+confusion_matrix_log_train.ap1 <- confusionMatrix(as.factor(predictions_log_train.ap1), as.factor(train.ap1$survived),mode="prec_recall", positive = "1")
+confusion_matrix_log_train.ap1
+
+confusion_matrix_log_test.ap1 <- confusionMatrix(as.factor(predictions_log_test.ap1), as.factor(test.ap1$survived),mode="prec_recall", positive = "1")
+confusion_matrix_log_test.ap1
 ```
 
-```{r Appendix - sibsp and parch as 2 categories}
+```{r Group model creation code - sibsp and parch as 2 categories}
 library(car)
 data.clean.ap2 = odata[, !(names(odata) %in% c("name", "ticket", "boat","body","home.dest"))]
 
@@ -131,7 +146,7 @@ data.clean.ap2$sibsp_y = ifelse(data.clean.ap2$sibsp > 0, 1, 0)
 data.clean.ap2$parch_y = ifelse(data.clean.ap2$parch > 0, 1, 0)
 
 # Removing Dummified cols:
-data.clean.ap2 = subset(data.clean.ap2, select  = -c(pclass, sex, embarked, deck, deck_imp, sibsp, parch))
+data.clean.ap2 = subset(data.clean.ap2, select  = -c(pclass, sex, embarked, deck, deck_imp))#, sibsp, parch))
 
 data.clean.ap2 = na.omit(data.clean.ap2)
 
@@ -151,16 +166,6 @@ lmod.ap2 <- glm(as.factor(survived) ~ ., family = binomial, data = train.ap2)
 summary(lmod.ap2)
 vif(lmod.ap2)
 
-#y_hat_sib_train<-predict(sib_model, data = train)
-#predictions_train <- ifelse(y_hat_sib_train > 0.5, 1, 0)
-#confusion_matrix_train <- table(Actual = train$survived, Predicted = predictions_train)
-#print(confusion_matrix_train)
-
-#y_hat_sib_test<-predict(sib_model, newdata = test)
-#predictions_test <- ifelse(y_hat_sib_test > 0.5, 1, 0)
-#confusion_matrix_test <- table(Actual = test$survived, Predicted = predictions_test)
-#print(confusion_matrix_test)
-
 y_hat_mulvar_train.ap2<-predict(mulvar_model.ap2, data = train.ap2)
 predictions_train.ap2 <- ifelse(y_hat_mulvar_train.ap2 > 0.5, 1, 0)
 ModelTrain_mulvar.ap2<-data.frame(obs = train.ap2$survived, pred=predictions_train.ap2)
@@ -173,13 +178,28 @@ linear.test.ap2 <- defaultSummary(ModelTest_mulvar.ap2)
 
 
 y_hat_log_train.ap2<-predict(lmod.ap2, data = train.ap2)
+predictions_log_train.ap2 <- ifelse(y_hat_log_train.ap2 > 0.5, 1, 0)
 ModelTrain_lmod.ap2<-data.frame(obs = train.ap2$survived, pred=y_hat_log_train.ap2)
 log.train.ap2 <- defaultSummary(ModelTrain_mulvar.ap2)
 
 y_hat_log_test.ap2<-predict(lmod.ap2, newdata = test.ap2)
-ModelTest_lmod.ap2<-data.frame(obs = test.ap2$survived, pred=y_hat_log_test.ap2)
+predictions_log_test.ap2 <- ifelse(y_hat_log_test.ap2 > 0.5, 1, 0)
+ModelTest_lmod.ap2<-data.frame(obs = test.ap2$survived, pred=predictions_log_test.ap2)
 log.test.ap2 <- defaultSummary(ModelTest_lmod.ap2)
 
 
 data.frame(rbind(linear.train.ap2,linear.test.ap2,log.train.ap2,log.test.ap2))
+
+
+confusion_matrix_mulvar_train.ap2 <- confusionMatrix(as.factor(predictions_train.ap2), as.factor(train.ap2$survived),mode="prec_recall", positive = "1")
+confusion_matrix_mulvar_train.ap2
+
+confusion_matrix_mulvar_test.ap2 <- confusionMatrix(as.factor(predictions_test.ap2), as.factor(test.ap2$survived),mode="prec_recall", positive = "1")
+confusion_matrix_mulvar_test.ap2
+
+confusion_matrix_log_train.ap2 <- confusionMatrix(as.factor(predictions_log_train.ap2), as.factor(train.ap2$survived),mode="prec_recall", positive = "1")
+confusion_matrix_log_train.ap2
+
+confusion_matrix_log_test.ap2 <- confusionMatrix(as.factor(predictions_log_test.ap2), as.factor(test.ap2$survived),mode="prec_recall", positive = "1")
+confusion_matrix_log_test.ap2
 ```
