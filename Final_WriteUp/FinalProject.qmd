@@ -215,11 +215,13 @@ examined if the model assumptions appeared to hold for each model.
 
 # Description of the data and quality
 
-Based on the data cleaning we were able to only remove 2 rows from the data set.
-We used median imputation as well as KNN for various columns. We also dummified 
-several categorical columns. We found that leaving sibsp and parch as continuous
-as opposed to categorical increased their contributions to the model performance
-[Appendix A](#appendix_A). Further, we also extracted the deck number and found that removing deck_G from the model increased its performance. 
+Based on the data cleaning we were able to only remove 2 rows from the
+data set. We used median imputation as well as KNN for various columns.
+We also dummified several categorical columns. We found that leaving
+sibsp and parch as continuous as opposed to categorical increased their
+contributions to the model performance (See [Appendix A](#appendix_A)).
+Further, we also extracted the deck number and found that removing
+deck_G from the model increased its performance.
 
 ## Loading the data
 
@@ -321,7 +323,9 @@ plot_missing_barchart(data.clean)
 
 We dummify pclass, sex, embarked and deck. We leave sibsp and parch as
 continuous variables as we observed that dummifying these columns leads
-to smaller significance [Appendix A](#appendix_A), whilst leaving them as continuous maximizes their contributions to the models explanatory power.
+to smaller significance (See [Appendix A](#appendix_A)), whilst leaving
+them as continuous maximizes their contributions to the models
+explanatory power.
 
 ```{r}
 # Dummifying pclass:
@@ -923,19 +927,16 @@ diagnostics_summary <- data.frame(
 )
 ```
 
-
 ```{r}
 #| tbl-cap: "Summary of Diagnostic tests on Filtered vs Base models"
 diagnostics_summary
 ```
-
 
 ```{r}
 #| tbl-cap: "VIF Results for Base Logistic Regression Model"
 # Run VIF on the logistic model
 ols_vif_tol(lmod)
 ```
-
 
 ```{r}
 #| tbl-cap: "VIF Results for Filtered Logistic Regression Model"
@@ -972,7 +973,6 @@ ModelTest_base <- data.frame(obs = observations.test, pred = pred_base_test)
 filtered.test.base <- defaultSummary(ModelTest_base)
 ```
 
-
 ```{r}
 #| tbl-cap: "Comparison of stats between base and filtered log models:"
 data.frame(rbind(log.train.base,log.test.base,filtered.log.train.base,filtered.test.base))
@@ -983,7 +983,6 @@ data.frame(rbind(log.train.base,log.test.base,filtered.log.train.base,filtered.t
 :::
 
 # Ongoing Model Monitoring Plan
-
 
 In order to maintain the effectiveness of the model, we would need to
 continue to test it on new data. Since the Titanic was a rare event, we
@@ -1008,10 +1007,10 @@ why?
 ::: pagebreak
 :::
 
-# Appendix A: Check if 'sibsp' and 'parch' should be continuous or categorical {.unnumbered .toc-entry #appendix_A}
+# Appendix A: Check if 'sibsp' and 'parch' should be continuous or categorical {#appendix_A .unnumbered .toc-entry}
 
-We don't see significant improvement between modeling these predictors as
-continuous or categorical, therefore we decided to leave them as
+We don't see significant improvement between modeling these predictors
+as continuous or categorical, therefore we decided to leave them as
 continuous.
 
 ```{r Group model creation code - sibsp and parch as individual categories}
