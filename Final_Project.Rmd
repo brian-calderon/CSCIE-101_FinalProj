@@ -17,8 +17,6 @@ library(MASS)
 library(fastDummies)
 library(stringr)
 ```
-``` {r poisson}
-  library(MASS)
 
 ```{r}
 library(ggplot2)
@@ -280,21 +278,17 @@ cat("We are using:", nrow(train)/nrow(data.clean) * 100, '% of the data for trai
     out
   }
 
-  poissonReg <- glm(survived~.,family=poisson, train)
+  poissonReg <- glm(survived~.-deck_G,family=poisson, train)
   summary(poissonReg)
   
   # compare the fitted model to the null model
-  1-pchisq(24.41141, 12)
+  1-pchisq(672.34-390.72, length(coef(poissonReg)))
   
   anova(poissonReg,test="Chi")
   drop1(poissonReg,test="Chi")
   
   # Testing against test data
   predicted_probs <- predict(poissonReg, newdata = test, type = "response")
-  
-  predictions <- ifelse(predicted_probs > 0.49, 1, 0)
-  confusion_matrix <- confusionMatrix(as.factor(predictions), as.factor(test$survived), mode="prec_recall", positive = "1")
-  confusion_matrix 
   
   # Get the results of different cutoff values
   testResult<-cutoff.prg(predicted_probs,test$survived)
@@ -306,11 +300,15 @@ cat("We are using:", nrow(train)/nrow(data.clean) * 100, '% of the data for trai
 ```
 \par Ho: Variables are not important
 \par Ha: Variable are important
-\par Since we have a p-value of 0.017, we reject the null hypothesis. Variables are important.
+\par Since we have a p-value of 0, we reject the null hypothesis. Variables are important.
 
-\par According to the regression the male variable decreases the log-odds of survival by 0.78211, which translates to a 54% lower odds of survival compared to being female.
-\par Assuming a alpha of 0.05, when adding sequentially to the model, only the sex_male variable is significant (a p-value of 1.368e-05). Additionally, when performing the drop one test, we see that only the sex_male variable is significantly affecting the model (a p-value of 2.575e-05). Therefore, the sex vairable is the only statistically significant variable within the model.
+\par TODO - will update
+\par According to the regression, .
 
-\par For the Poisson Regression, only sex_male is significant. 
+\par Assuming a alpha of 0.05, when adding sequentially to the model, fare variable (a p-value of 2.267e-07), pclass_1 variable (a p-value of 2.018e-08), pclass_2 variable (a p-value of 3.622e-05), sex_M variable (a p-value of < 2.2e-16), deck_E variable (a p-value of 1.789e-13), deck_F variable (a p-value of 0.0002903)  are significant. 
 
-\par Our Poisson Regression has a balanced accuracy of 81.28% with optimal cutoﬀ(.26) based on max F1 score (.7619).
+\par Additionally, when performing the drop one test, we see that age variable (a p-value of 0.0006444), pclass_2 variable (a p-value of 0.0110067), sex_M variable (a p-value of < 2.2e-16), and deck_F variable (a p-value of 0.0011530) are significant. 
+
+\par For the Poisson Regression, only sex_male is significant. TODO
+
+\par Our Poisson Regression has a balanced accuracy of 81.40% with optimal cutoﬀ(.28) based on max F1 score (0.7636).
