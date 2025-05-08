@@ -1,5 +1,21 @@
 ```{r Group model creation code - sibsp and parch as individual categories}
 library(car)
+odata$deck <- substr(odata$cabin, 1,1)
+
+# Replace "" with NA in the 'deck' column
+odata$deck[odata$deck == ""] <- NA
+
+# Convert 'cabin' to factor
+odata$deck <- as.factor(odata$deck)
+
+# Apply kNN imputation just to Cabin column
+odata <- kNN(odata, variable = "deck", k = 5)
+odata <- odata[-1310,]
+
+# Check that NAs were imputed
+sum(is.na(odata$deck))        # Original
+#sum(is.na(data.clean.imputed$deck)) # After
+
 data.clean.ap1 = odata[, !(names(odata) %in% c("name", "ticket", "boat","body","home.dest"))]
 
 # Remove cabin col:
@@ -108,6 +124,22 @@ confusion_matrix_log_test.ap1
 
 ```{r Group model creation code - sibsp and parch as 2 categories}
 library(car)
+odata$deck <- substr(odata$cabin, 1,1)
+
+# Replace "" with NA in the 'deck' column
+odata$deck[odata$deck == ""] <- NA
+
+# Convert 'cabin' to factor
+odata$deck <- as.factor(odata$deck)
+
+# Apply kNN imputation just to Cabin column
+odata <- kNN(odata, variable = "deck", k = 5)
+odata <- odata[-1310,]
+
+# Check that NAs were imputed
+sum(is.na(odata$deck))        # Original
+#sum(is.na(data.clean.imputed$deck)) # After
+
 data.clean.ap2 = odata[, !(names(odata) %in% c("name", "ticket", "boat","body","home.dest"))]
 
 # Remove cabin col:
