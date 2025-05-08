@@ -1,0 +1,185 @@
+```{r Appendix - sibsp and parch as individual categories}
+library(car)
+data.clean.ap1 = odata[, !(names(odata) %in% c("name", "ticket", "boat","body","home.dest"))]
+
+# Remove cabin col:
+data.clean.ap1$cabin <- NULL
+
+#Replace NAs in age column with Median value 
+median_age.ap1 <- median(data.clean.ap1$age, na.rm = TRUE)
+data.clean.ap1 <- data.clean.ap1 %>%
+  mutate(age = ifelse(is.na(age), median_age.ap1, age))
+
+
+# Dummifying pclass:
+data.clean.ap1$pclass_1 = ifelse(data.clean.ap1$pclass == 1, 1, 0)
+data.clean.ap1$pclass_2 = ifelse(data.clean.ap1$pclass == 2, 1, 0)
+
+# Dummifying sex:
+data.clean.ap1$sex_M = ifelse(data.clean.ap1$sex == 'male', 1, 0)
+
+# Dummifying embarked:
+data.clean.ap1$embarked_C = ifelse(data.clean.ap1$embarked == 'C', 1, 0)
+data.clean.ap1$embarked_Q = ifelse(data.clean.ap1$embarked == 'Q', 1, 0)
+
+# Dummifying deck:
+data.clean.ap1$deck_A = ifelse(data.clean.ap1$deck == 'A', 1, 0)
+data.clean.ap1$deck_B = ifelse(data.clean.ap1$deck == 'B', 1, 0)
+data.clean.ap1$deck_C = ifelse(data.clean.ap1$deck == 'C', 1, 0)
+data.clean.ap1$deck_D = ifelse(data.clean.ap1$deck == 'D', 1, 0)
+data.clean.ap1$deck_E = ifelse(data.clean.ap1$deck == 'E', 1, 0)
+data.clean.ap1$deck_F = ifelse(data.clean.ap1$deck == 'F', 1, 0)
+#data.clean.ap1$deck_G = ifelse(data.clean.ap1$deck == 'G', 1, 0) # removed due to causing issues
+
+# Dummifying sibsp:
+data.clean.ap1$sibsp_1 = ifelse(data.clean.ap1$sibsp == 1, 1, 0)
+data.clean.ap1$sibsp_2 = ifelse(data.clean.ap1$sibsp == 2, 1, 0)
+data.clean.ap1$sibsp_3 = ifelse(data.clean.ap1$sibsp == 3, 1, 0)
+data.clean.ap1$sibsp_4 = ifelse(data.clean.ap1$sibsp == 4, 1, 0)
+data.clean.ap1$sibsp_5 = ifelse(data.clean.ap1$sibsp == 5, 1, 0)
+#data.clean.ap1$sibsp_8 = ifelse(data.clean.ap1$sibsp == 8, 1, 0) # removed due to causing issues
+
+# Dummifying parch:
+data.clean.ap1$parch_1 = ifelse(data.clean.ap1$parch == 1, 1, 0)
+data.clean.ap1$parch_2 = ifelse(data.clean.ap1$parch == 2, 1, 0)
+data.clean.ap1$parch_3 = ifelse(data.clean.ap1$parch == 3, 1, 0)
+data.clean.ap1$parch_4 = ifelse(data.clean.ap1$parch == 4, 1, 0)
+data.clean.ap1$parch_5 = ifelse(data.clean.ap1$parch == 5, 1, 0)
+data.clean.ap1$parch_6 = ifelse(data.clean.ap1$parch == 6, 1, 0)
+#data.clean.ap1$parch_9 = ifelse(data.clean.ap1$parch == 9, 1, 0) # removed due to causing issues
+
+# Removing Dummified cols:
+data.clean.ap1 = subset(data.clean.ap1, select  = -c(pclass, sex, embarked, deck, deck_imp, sibsp, parch))
+
+data.clean.ap1 = na.omit(data.clean.ap1)
+
+cat(nrow(odata) - nrow(data.clean.ap1),'rows were removed from original dataset')
+
+set.seed(567)
+train_indices_ap1 = sample(1 : nrow(data.clean.ap1), size = 0.7005*nrow(data.clean.ap1), replace = FALSE)
+train.ap1 = data.clean.ap1[train_indices_ap1,]
+test.ap1 = data.clean.ap1[-train_indices_ap1,]
+cat("We are using:", nrow(train.ap1)/nrow(data.clean.ap1) * 100, '% of the data for training')
+
+mulvar_model.ap1 <- lm(survived ~ ., data = train.ap1)
+summary(mulvar_model.ap1)
+vif(mulvar_model.ap1)
+
+lmod.ap1 <- glm(as.factor(survived) ~ ., family = binomial, data = train.ap1)
+summary(lmod.ap1)
+vif(lmod.ap1)
+
+y_hat_mulvar_train.ap1<-predict(mulvar_model.ap1, data = train.ap1)
+predictions_train.ap1 <- ifelse(y_hat_mulvar_train.ap1 > 0.5, 1, 0)
+ModelTrain_mulvar.ap1<-data.frame(obs = train.ap1$survived, pred=predictions_train.ap1)
+linear.train.ap1 <- defaultSummary(ModelTrain_mulvar.ap1)
+
+y_hat_mulvar_test.ap1<-predict(mulvar_model.ap1, newdata = test.ap1)
+predictions_test.ap1 <- ifelse(y_hat_mulvar_test.ap1 > 0.5, 1, 0)
+ModelTest_mulvar.ap1<-data.frame(obs = test.ap1$survived, pred=predictions_test.ap1)
+linear.test.ap1 <- defaultSummary(ModelTest_mulvar.ap1)
+
+
+y_hat_log_train.ap1<-predict(lmod.ap1, data = train.ap1)
+ModelTrain_lmod.ap1<-data.frame(obs = train.ap1$survived, pred=y_hat_log_train.ap1)
+log.train.ap1 <- defaultSummary(ModelTrain_lmod.ap1)
+
+y_hat_log_test.ap1<-predict(lmod.ap1, newdata = test.ap1)
+ModelTest_lmod.ap1<-data.frame(obs = test.ap1$survived, pred=y_hat_log_test.ap1)
+log.test.ap1 <- defaultSummary(ModelTest_lmod.ap1)
+
+data.frame(rbind(linear.train.ap1,linear.test.ap1,log.train.ap1,log.test.ap1))
+```
+
+```{r Appendix - sibsp and parch as 2 categories}
+library(car)
+data.clean.ap2 = odata[, !(names(odata) %in% c("name", "ticket", "boat","body","home.dest"))]
+
+# Remove cabin col:
+data.clean.ap2$cabin <- NULL
+
+#Replace NAs in age column with Median value 
+median_age.ap2 <- median(data.clean.ap2$age, na.rm = TRUE)
+data.clean.ap2 <- data.clean.ap2 %>%
+  mutate(age = ifelse(is.na(age), median_age.ap2, age))
+
+
+# Dummifying pclass:
+data.clean.ap2$pclass_1 = ifelse(data.clean.ap2$pclass == 1, 1, 0)
+data.clean.ap2$pclass_2 = ifelse(data.clean.ap2$pclass == 2, 1, 0)
+
+# Dummifying sex:
+data.clean.ap2$sex_M = ifelse(data.clean.ap2$sex == 'male', 1, 0)
+
+# Dummifying embarked:
+data.clean.ap2$embarked_C = ifelse(data.clean.ap2$embarked == 'C', 1, 0)
+data.clean.ap2$embarked_Q = ifelse(data.clean.ap2$embarked == 'Q', 1, 0)
+
+# Dummifying deck:
+data.clean.ap2$deck_A = ifelse(data.clean.ap2$deck == 'A', 1, 0)
+data.clean.ap2$deck_B = ifelse(data.clean.ap2$deck == 'B', 1, 0)
+data.clean.ap2$deck_C = ifelse(data.clean.ap2$deck == 'C', 1, 0)
+data.clean.ap2$deck_D = ifelse(data.clean.ap2$deck == 'D', 1, 0)
+data.clean.ap2$deck_E = ifelse(data.clean.ap2$deck == 'E', 1, 0)
+data.clean.ap2$deck_F = ifelse(data.clean.ap2$deck == 'F', 1, 0)
+#data.clean.ap2$deck_G = ifelse(data.clean.ap2$deck == 'G', 1, 0) # removed due to causing issues
+
+# Dummifying sibsp to 2 categories:
+data.clean.ap2$sibsp_y = ifelse(data.clean.ap2$sibsp > 0, 1, 0)
+
+# Dummifying parch to 2 categories:
+data.clean.ap2$parch_y = ifelse(data.clean.ap2$parch > 0, 1, 0)
+
+# Removing Dummified cols:
+data.clean.ap2 = subset(data.clean.ap2, select  = -c(pclass, sex, embarked, deck, deck_imp, sibsp, parch))
+
+data.clean.ap2 = na.omit(data.clean.ap2)
+
+cat(nrow(odata) - nrow(data.clean.ap2),'rows were removed from original dataset')
+
+set.seed(567)
+train_indices_ap2 = sample(1 : nrow(data.clean.ap2), size = 0.7005*nrow(data.clean.ap2), replace = FALSE)
+train.ap2 = data.clean.ap2[train_indices_ap2,]
+test.ap2 = data.clean.ap2[-train_indices_ap2,]
+cat("We are using:", nrow(train.ap2)/nrow(data.clean.ap2) * 100, '% of the data for training')
+
+mulvar_model.ap2 <- lm(survived ~ ., data = train.ap2)
+summary(mulvar_model.ap2)
+vif(mulvar_model.ap2)
+
+lmod.ap2 <- glm(as.factor(survived) ~ ., family = binomial, data = train.ap2)
+summary(lmod.ap2)
+vif(lmod.ap2)
+
+#y_hat_sib_train<-predict(sib_model, data = train)
+#predictions_train <- ifelse(y_hat_sib_train > 0.5, 1, 0)
+#confusion_matrix_train <- table(Actual = train$survived, Predicted = predictions_train)
+#print(confusion_matrix_train)
+
+#y_hat_sib_test<-predict(sib_model, newdata = test)
+#predictions_test <- ifelse(y_hat_sib_test > 0.5, 1, 0)
+#confusion_matrix_test <- table(Actual = test$survived, Predicted = predictions_test)
+#print(confusion_matrix_test)
+
+y_hat_mulvar_train.ap2<-predict(mulvar_model.ap2, data = train.ap2)
+predictions_train.ap2 <- ifelse(y_hat_mulvar_train.ap2 > 0.5, 1, 0)
+ModelTrain_mulvar.ap2<-data.frame(obs = train.ap2$survived, pred=predictions_train.ap2)
+linear.train.ap2 <- defaultSummary(ModelTrain_mulvar.ap2)
+
+y_hat_mulvar_test.ap2<-predict(mulvar_model.ap2, newdata = test.ap2)
+predictions_test.ap2 <- ifelse(y_hat_mulvar_test.ap2 > 0.5, 1, 0)
+ModelTest_mulvar.ap2<-data.frame(obs = test.ap2$survived, pred=predictions_test.ap2)
+linear.test.ap2 <- defaultSummary(ModelTest_mulvar.ap2)
+
+
+y_hat_log_train.ap2<-predict(lmod.ap2, data = train.ap2)
+ModelTrain_lmod.ap2<-data.frame(obs = train.ap2$survived, pred=y_hat_log_train.ap2)
+log.train.ap2 <- defaultSummary(ModelTrain_mulvar.ap2)
+
+y_hat_log_test.ap2<-predict(lmod.ap2, newdata = test.ap2)
+ModelTest_lmod.ap2<-data.frame(obs = test.ap2$survived, pred=y_hat_log_test.ap2)
+log.test.ap2 <- defaultSummary(ModelTest_lmod.ap2)
+
+
+data.frame(rbind(linear.train.ap2,linear.test.ap2,log.train.ap2,log.test.ap2))
+```
