@@ -31,6 +31,12 @@ ModelTest<-data.frame(obs = test$survived, pred=predictions_test)
 nn_sum_test <- defaultSummary(ModelTest)
 nn_sum_test
 cor(predictions_test, test$survived)
+
+confusion_matrix_nn_train <- confusionMatrix(as.factor(predictions_train), as.factor(train_norm$survived),mode="prec_recall", positive = "1")
+confusion_matrix_nn_train  
+
+confusion_matrix_nn_test <- confusionMatrix(as.factor(predictions_test), as.factor(test$survived),mode="prec_recall", positive = "1")
+confusion_matrix_nn_test 
 ```
 
 
@@ -67,4 +73,10 @@ ModelTest<-data.frame(obs = test$survived, pred=predictions_test)
 nn_sum_test <- defaultSummary(ModelTest)
 nn_sum_test
 cor(predictions_test, test$survived)
+
+confusion_matrix_nn2_train <- confusionMatrix(as.factor(predictions_train), as.factor(train_norm$survived),mode="prec_recall", positive = "1")
+confusion_matrix_nn2_train  
+
+confusion_matrix_nn2_test <- confusionMatrix(as.factor(predictions_test), as.factor(test$survived),mode="prec_recall", positive = "1")
+confusion_matrix_nn2_test 
 ```
