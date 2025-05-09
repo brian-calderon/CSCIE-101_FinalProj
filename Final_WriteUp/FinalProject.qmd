@@ -828,29 +828,89 @@ testing and review the comparative goodness of fit of the candidate
 models. Describe step by step your procedure to get to the best model
 and why you believe it is fit for purpose.
 
+We decided to build a Poisson model for our challenger model. After building our original poisson model, we first check to see if the variables are important.
+
+\par Ho: Variables are not important
+\par Ha: Variable are important
+
+Since we have a p-value of 0, we reject the null hypothesis. Variables are important.
+
+Our poisson model has three significant variables, pclass_2, sex_M, and deck_F with an alpha of 0.05.
+
+According to the poisson regression:
+\par The odds of survival increases by 38.16% when the passenger is second class. ((exp(0.32326) - 1) * 100)
+\par The odds of survival decreases by 68.37% when the passenger is male. ((exp(-1.15125) - 1) * 100)
+\par The odds of survival decreases by 63.19% when the passenger is from deck G. ((exp(-0.99963) - 1) * 100)
+
+\par Our Poisson Regression has an accuracy of 75.51% with optimal cutoﬀ(.17) based on max F1 score (0.7272).
+
 ```{r poisson}
 library(MASS)
 
 # Train base Poisson model:
-poissonReg <- glm(survived ~ .,family=poisson, train)
-summary(poissonReg)
+poissonReg_full <- glm(survived ~ .,family=poisson, train)
 
-# compare the fitted model to the null model
-1-pchisq(672.34-390.72, length(coef(poissonReg)))
+# compare the fitted model to the null model and calculate if the variables are important
+summary(poissonReg_full)
+1-pchisq(672.00-409.95, length(coef(poissonReg_full)) - 1)
 
-anova(poissonReg,test="Chi")
-drop1(poissonReg,test="Chi")
+# We then reduce the model and see if the removed variables are significant
+poissonReg_reduced <- glm(survived ~ pclass_2+sex_M+deck_F,family=poisson, train)
 
-# Testing against test data
-predicted_probs <- predict(poissonReg, newdata = test, type = "response")
+# Verify that all variables are significant and no more can be dropped
+anova(poissonReg_reduced, poissonReg_full, test="Chi")
+drop1(poissonReg_reduced,test="Chi")
+
+### Train Data
+
+# Testing against train data
+predicted_probs <- predict(poissonReg_reduced, newdata = train, type = "response")
 
 # Get the results of different cutoff values
-testResult<-cutoff.prg(predicted_probs,test$survived)
+trainResult<-cutoff.prg(predicted_probs,train$survived)
 
 # We get get the optimal p cut off value based on the maximum F1 score
-plot(testResult[,1],testResult[,8],xlab="cut off",ylab="F1")
-testResult[which.max(testResult[,8]),]
+plot(trainResult[,1],trainResult[,8],xlab="cut off",ylab="F1")
+poisson.model.cutoff = trainResult[which.max(trainResult[,8]),]
 
+# Get the F1 and Accuracy for train data using the optimal p value
+observations.train <- train$survived
+predictions.poisson.model.train <- ifelse(predicted_probs > poisson.model.cutoff[1], 1, 0)
+
+confusion.matrix.binary.model.poisson.train <- confusionMatrix(as.factor(predictions.poisson.model.train),as.factor(observations.train), positive = "1")
+
+poisson.model.accuracy.train = confusion.matrix.binary.model.poisson.train$overall['Accuracy']
+poisson.model.f1.train = confusion.matrix.binary.model.poisson.train$byClass['F1']
+
+poisson.model.train.summary = data.frame(
+  Accuracy = poisson.model.accuracy.train,
+  F1 = poisson.model.f1.train
+)
+
+row.names(poisson.model.train.summary) <- 'poisson.model.train'
+
+### Test Data
+
+# Testing against test data
+predicted_probs <- predict(poissonReg_reduced, newdata = test, type = "response")
+
+# Get the F1 and Accuracy for test data using the optimal p value
+observations.test <- test$survived
+predictions.poisson.model.test <- ifelse(predicted_probs > poisson.model.cutoff[1], 1, 0)
+
+confusion.matrix.binary.model.poisson.test <- confusionMatrix(as.factor(predictions.poisson.model.test),as.factor(observations.test), positive = "1")
+
+poisson.model.accuracy.test = confusion.matrix.binary.model.poisson.test$overall['Accuracy']
+poisson.model.f1.test = confusion.matrix.binary.model.poisson.test$byClass['F1']
+
+poisson.model.test.summary = data.frame(
+  Accuracy = poisson.model.accuracy.test,
+  F1 = poisson.model.f1.test
+)
+
+row.names(poisson.model.test.summary) <- 'poisson.model.test'
+
+data.frame(rbind(poisson.model.train.summary,poisson.model.test.summary ))
 ```
 
 ::: pagebreak
@@ -1001,8 +1061,19 @@ today.
 
 # Conclusion
 
-Summarize your results here. What is the best model for the data and
-why?
+As we can see from the comparing all three models. The "vif.model" performed the base against the test data set. This is due to the removal high vif variables until our model reached a total VIF under 10 for each variable. Multicollinarity was a big factor that impacted our models accuracy and F1. Once we removed indications multicollinarity, we could see that our models performance increased over the base model. 
+
+However, with the "poisson.model", we see a decrease in accuracy compared the base model. This decrease is expected due to the nature of the poisson regression. The regression is most useful when the response variable is a count variable rather than a binary response. Thus a decrease in accuracy and F1 is expected against the base model.
+
+As a conclusion, the model reduced via VIF is the best model to predict if a passenger were to survive, with an accuracy of 85.20% and improved over the base model by 0.25%.
+
+```{r conclusion}
+#| tbl-cap: "Comparison of our base model, best performing developed model, and challenger model"
+data.frame(rbind(base.model.test.summary, 
+                 vif.model.test.summary,
+                 poisson.model.test.summary))
+  
+```
 
 ::: pagebreak
 :::
