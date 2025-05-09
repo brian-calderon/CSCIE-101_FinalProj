@@ -539,13 +539,21 @@ plot(lmod)
 
 # Model Performance Testing
 
-We compare four different models: 1) Base log. model 2) Model with
-insig. pred. removed 3) Stepwise model 4) Model with high vif pred.
-removed
+We compare four different models:
 
-When comparing the accuracy and F1 score on all models the base model
-was still the highest performer and we decided to use that as the
-champion model until now.
+1\) Base log. model (lmod)
+
+2\) Model with insig. pred. removed (filtered.model)
+
+3\) Stepwise model (step.model)
+
+4\) Model with high vif pred. removed (vif.model)
+
+When comparing the accuracy and F1 score on all models the vif model was
+the highest performer and we decided to use that as the champion model
+until now. We suspect that multicollinearity among the decks has an
+impact on the model performance which is why removing these collinear
+predictors improved the model slightly against the based model (+0.3%).
 
 ```{r}
 ################################################################################
@@ -858,14 +866,14 @@ testResult[which.max(testResult[,8]),]
 
 # Model Limitation and Assumptions
 
-The champion model selected is the filtered logistic regression model
-due to its superior train accuracy (85.04%) and F1 score (0.8099). The
-filtered logistic regression model was developed through backward
-elimination procedure, applied to the full base model. This process
-iteratively removed predictors with high p-values until only
-statistically significant predictors remained, based on threshold (p
-\<0.05). The base model is used as the benchmark due to its similar
-performance and broader feature set.
+The champion model selected is the VIF logistic regression model due to
+its superior test accuracy (84.7%) and F1 score (0.7857). The VIF
+logistic regression model was developed through backward elimination
+procedure, applied to the full base model. This process iteratively
+removed predictors with high VIF (\>5) until only statistically
+significant predictors remained that have VIF \< 5. The base model is
+used as the benchmark due to its similar performance and broader feature
+set.
 
 "Survived = 5.56 - 0.055age - 0.23sibsp + 1pclass_1 + 1.9pclass_2 -
 3.2sex_M + 0.84embarked_C + 0.86embarked_Q - 2.5deck_A - 1.9deck_B -
@@ -882,7 +890,7 @@ through train/test split with consistent performance across sets. The
 performance on test data and train data show minimal difference,
 indicating the model is robust, no overfitting problem.
 
-To evaluate the stability and fit of the base and filtered logistic
+To evaluate the stability and fit of the base and vif logistic
 regression models, we conducted residual-based tests on their linear
 analogs. While logistic regression does not formally require normally
 distributed or homoscedastic residuals, these tests offer insights into
@@ -899,10 +907,8 @@ heteroskedasticity and non-normality. These findings do not violate
 logistic regression assumptions but suggest the model could be further
 improved through additional transformations or interaction terms.
 
-Multicollinearity was significantly lower in the filtered model (max
-VIF: 3.69 vs. 16.63), supporting better generalization and
-interpretability. The VIF is less than 5, confirmed no severe
-multicollinearity.
+Multicollinearity was significantly lower in the vif model (max VIF:
+3.69 vs. 16.63), supporting better generalization and interpretability.
 
 ```{r Hao Code Model Review}
 library(car)
