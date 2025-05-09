@@ -1,0 +1,31 @@
+```{r Lasso Regression}
+library(glmnet)
+x <- model.matrix(survived~., train)[,-c(1)]
+y <- train$survived
+lasso_mod <- glmnet(x, y, alpha=1, nlambda=100,lambda.min.ratio=0.0001)
+plot(lasso_mod,xvar="norm",label=TRUE)
+cv_lasso_mod <- cv.glmnet(x, y, alpha=1, nlambda=100,lambda.min.ratio=0.0001)
+plot(cv_lasso_mod)
+best.lambda.lasso <- cv_lasso_mod$lambda.min
+best.lambda.lasso
+coef(cv_lasso_mod, s = "lambda.min")
+
+predicted_lasso_train <- predict(cv_lasso_mod, s = best.lambda.lasso, x)
+predictions_train <- ifelse(predicted_lasso_train > 0.5, 1, 0)
+ModelTrain<-data.frame(obs = train$survived, pred=predictions_train[1])
+lasso_train <- defaultSummary(ModelTrain)
+
+new_x <- model.matrix(survived~., test)[,-c(1)]
+predicted_lasso_test <- predict(cv_lasso_mod, s = best.lambda.lasso, new_x)
+predictions_test <- ifelse(predicted_lasso_test > 0.5, 1, 0)
+ModelTest<-data.frame(obs = test$survived, pred=predictions_test[1])
+lasso_test <- defaultSummary(ModelTest)
+
+data.frame(rbind(lasso_train,lasso_test))
+
+confusion_matrix_lasso_train <- confusionMatrix(as.factor(predictions_train), as.factor(train$survived),mode="prec_recall", positive = "1")
+confusion_matrix_lasso_train  
+
+confusion_matrix_lasso_test <- confusionMatrix(as.factor(predictions_test), as.factor(test$survived),mode="prec_recall", positive = "1")
+confusion_matrix_lasso_test
+```
