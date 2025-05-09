@@ -173,22 +173,24 @@ explanations. A more formal.**
 
 # Executive Summary
 
-This section will describe the model usage, your conclusions and any
-regulatory and internal requirements. In a real world scenario, this
-section is for senior management who do not need to know the details.
-They need to know high level (the purpose of the model, limitations of
-the model and any issues).
+We have tested five different models of which four were logistics
+regression based and one was a poisson model. The best model with
+regards to predictive accuracy was a "filtered" logistic regression
+(filtered because we removed insignificant predictors) with an accuracy
+of 84.18%.
+
+The final model shows that the most significant predictors of survival
+are: age, sex, and deck_F. \
+Below we show the final calculated function:
+
+```         
+survived ~ 5.74 - 0.05 age - 0.025 sibsp + 0.80 pclass_1 + 1.82 pclass_2 - 3.27 sex_M + 0.83 embarked_C + 0.78 embarked_Q - 2.55 deck_A - 1.89 deck_B - 2.02 deck_C - 3.00 deck_D - 4.70 deck_F
+```
 
 ::: pagebreak
 :::
 
 # Introduction
-
-This section needs to introduce the reader to the problem to be
-resolved, the purpose, and the scope of the statistical testing applied.
-What you are doing with your prediction? What is the purpose of the
-model? What methods were trained on the data, how large is the test
-sample, and how did you build the model?
 
 The Titanic was a British-registered ship that set sail on its maiden
 voyage on April 10th, 1912 with 2,240 passengers and crew on board. On
@@ -282,6 +284,7 @@ missing data is \~0.2% which is quite small and can be removed.
 ```{r}
 # ---- Age----
 #Replace NAs in age column with Median value 
+set.seed (1023)
 median_age <- median(data.clean$age, na.rm = TRUE)
 data.clean <- data.clean %>%
   mutate(age = ifelse(is.na(age), median_age, age))
@@ -300,6 +303,7 @@ data.clean$deck[data.clean$deck == ""] <- NA
 data.clean$deck <- as.factor(data.clean$deck)
 
 # Apply kNN imputation just to Cabin column
+set.seed (1023)
 data.clean <- kNN(data.clean, variable = "deck", k = 5)
 
 # Check that NAs were imputed
@@ -482,6 +486,7 @@ some of the decks as predictors.
 library(car)
 
 # Log model on train data:
+set.seed (1023)
 lmod <- glm(survived ~ ., family = binomial, data = train)
 # summary(lmod)
 vif(lmod)
@@ -549,11 +554,12 @@ We compare four different models:
 
 4\) Model with high vif pred. removed (vif.model)
 
-When comparing the accuracy and F1 score on all models the vif model was
-the highest performer and we decided to use that as the champion model
-until now. We suspect that multicollinearity among the decks has an
-impact on the model performance which is why removing these collinear
-predictors improved the model slightly against the based model (+0.3%).
+When comparing the accuracy and F1 score on all models the filtered
+model was the highest performer and we decided to use that as the
+champion model until now. We suspect that multicollinearity among the
+decks has an impact on the model performance which is why removing these
+collinear predictors and filtering for insignificant variables improved
+the model slightly against the based model (+0.3%).
 
 ```{r}
 ################################################################################
@@ -828,37 +834,101 @@ data.frame(rbind(base.model.train.summary, base.model.test.summary,
 
 # Challenger Models
 
-Build an alternative model based on one of the following approaches to
-predict survival as applicable:logistic regression, decision tree, NN,
-or SVM, Poisson regression or negative binomial. Check the applicable
-model assumptions. Apply in-sample and out-of-sample testing, back
-testing and review the comparative goodness of fit of the candidate
-models. Describe step by step your procedure to get to the best model
-and why you believe it is fit for purpose.
+We decided to build a Poisson model for our challenger model. After
+building our original poisson model, we first check to see if the
+variables are important.
+
+Ho: Variables are not important
+
+Ha: Variable are important
+
+Since we have a p-value of 0, we reject the null hypothesis. Variables
+are important.
+
+Our poisson model has three significant variables, pclass_2, sex_M, and
+deck_F with an alpha of 0.05.
+
+According to the poisson regression:
+
+The odds of survival increases by 37.6% when the passenger is second
+class. ((exp(0.31918) - 1) \* 100)
+
+The odds of survival decreases by 68.14% when the passenger is male.
+((exp(-1.144) - 1) \* 100)
+
+The odds of survival decreases by 64.76% when the passenger is from deck
+G. ((exp(-1.043) - 1) \* 100)
+
+Our Poisson Regression has an accuracy of 74.74% with optimal cutoﬀ(.17)
+based on max F1 score (0.71954).
 
 ```{r poisson}
 library(MASS)
 
 # Train base Poisson model:
-poissonReg <- glm(survived ~ .,family=poisson, train)
-summary(poissonReg)
+poissonReg_full <- glm(survived ~ .,family=poisson, train)
 
-# compare the fitted model to the null model
-1-pchisq(672.34-390.72, length(coef(poissonReg)))
+# compare the fitted model to the null model and calculate if the variables are important
+summary(poissonReg_full)
+1-pchisq(672.00-409.95, length(coef(poissonReg_full)) - 1)
 
-anova(poissonReg,test="Chi")
-drop1(poissonReg,test="Chi")
+# We then reduce the model and see if the removed variables are significant
+poissonReg_reduced <- glm(survived ~ pclass_2+sex_M+deck_F,family=poisson, train)
 
-# Testing against test data
-predicted_probs <- predict(poissonReg, newdata = test, type = "response")
+# Verify that all variables are significant and no more can be dropped
+anova(poissonReg_reduced, poissonReg_full, test="Chi")
+drop1(poissonReg_reduced,test="Chi")
+
+### Train Data
+
+# Testing against train data
+predicted_probs <- predict(poissonReg_reduced, newdata = train, type = "response")
 
 # Get the results of different cutoff values
-testResult<-cutoff.prg(predicted_probs,test$survived)
+trainResult<-cutoff.prg(predicted_probs,train$survived)
 
 # We get get the optimal p cut off value based on the maximum F1 score
-plot(testResult[,1],testResult[,8],xlab="cut off",ylab="F1")
-testResult[which.max(testResult[,8]),]
+plot(trainResult[,1],trainResult[,8],xlab="cut off",ylab="F1")
+poisson.model.cutoff = trainResult[which.max(trainResult[,8]),]
 
+# Get the F1 and Accuracy for train data using the optimal p value
+observations.train <- train$survived
+predictions.poisson.model.train <- ifelse(predicted_probs > poisson.model.cutoff[1], 1, 0)
+
+confusion.matrix.binary.model.poisson.train <- confusionMatrix(as.factor(predictions.poisson.model.train),as.factor(observations.train), positive = "1")
+
+poisson.model.accuracy.train = confusion.matrix.binary.model.poisson.train$overall['Accuracy']
+poisson.model.f1.train = confusion.matrix.binary.model.poisson.train$byClass['F1']
+
+poisson.model.train.summary = data.frame(
+  Accuracy = poisson.model.accuracy.train,
+  F1 = poisson.model.f1.train
+)
+
+row.names(poisson.model.train.summary) <- 'poisson.model.train'
+
+### Test Data
+
+# Testing against test data
+predicted_probs <- predict(poissonReg_reduced, newdata = test, type = "response")
+
+# Get the F1 and Accuracy for test data using the optimal p value
+observations.test <- test$survived
+predictions.poisson.model.test <- ifelse(predicted_probs > poisson.model.cutoff[1], 1, 0)
+
+confusion.matrix.binary.model.poisson.test <- confusionMatrix(as.factor(predictions.poisson.model.test),as.factor(observations.test), positive = "1")
+
+poisson.model.accuracy.test = confusion.matrix.binary.model.poisson.test$overall['Accuracy']
+poisson.model.f1.test = confusion.matrix.binary.model.poisson.test$byClass['F1']
+
+poisson.model.test.summary = data.frame(
+  Accuracy = poisson.model.accuracy.test,
+  F1 = poisson.model.f1.test
+)
+
+row.names(poisson.model.test.summary) <- 'poisson.model.test'
+
+data.frame(rbind(poisson.model.train.summary,poisson.model.test.summary ))
 ```
 
 ::: pagebreak
@@ -866,18 +936,17 @@ testResult[which.max(testResult[,8]),]
 
 # Model Limitation and Assumptions
 
-The champion model selected is the VIF logistic regression model due to
-its superior test accuracy (84.7%) and F1 score (0.7857). The VIF
-logistic regression model was developed through backward elimination
-procedure, applied to the full base model. This process iteratively
-removed predictors with high VIF (\>5) until only statistically
-significant predictors remained that have VIF \< 5. The base model is
-used as the benchmark due to its similar performance and broader feature
-set.
+The champion model selected is the filtered logistic regression model
+due to its superior test accuracy (84.1%) and F1 score (0.78014). The
+filtered logistic regression model was developed through backward
+elimination procedure, applied to the full base model. This process
+iteratively removed predictors with high p-values until only
+statistically significant predictors remained. The base model is used as
+the benchmark due to its similar performance and broader feature set.
 
-"Survived = 5.56 - 0.055age - 0.23sibsp + 1pclass_1 + 1.9pclass_2 -
-3.2sex_M + 0.84embarked_C + 0.86embarked_Q - 2.5deck_A - 1.9deck_B -
-2.1deck_C - 3.1deck_D - 4.6deck_F"
+```{r}
+summary(binary.model.filtered)
+```
 
 To further evaluate and benchmark the logistic regression models, we
 computed RMSE, R², and MAE using the predicted probabilities against the
@@ -888,9 +957,9 @@ appears to have higher R² (0.4425\>0.4342), lower RMSE(0.3945 \< 0.3977)
 and MAE (0.1556 \<0.1582). Additionally, model validation was done
 through train/test split with consistent performance across sets. The
 performance on test data and train data show minimal difference,
-indicating the model is robust, no overfitting problem.
+indicating the model is robust, no over-itting problem.
 
-To evaluate the stability and fit of the base and vif logistic
+To evaluate the stability and fit of the base and filtered logistic
 regression models, we conducted residual-based tests on their linear
 analogs. While logistic regression does not formally require normally
 distributed or homoscedastic residuals, these tests offer insights into
@@ -907,8 +976,9 @@ heteroskedasticity and non-normality. These findings do not violate
 logistic regression assumptions but suggest the model could be further
 improved through additional transformations or interaction terms.
 
-Multicollinearity was significantly lower in the vif model (max VIF:
-3.69 vs. 16.63), supporting better generalization and interpretability.
+Multicollinearity was significantly lower in the filtered model (max
+VIF: 3.69 vs. 16.63), supporting better generalization and
+interpretability.
 
 ```{r Hao Code Model Review}
 library(car)
@@ -996,19 +1066,70 @@ do not have a lot of new data to test on the model, but we can still be
 prepared in case new data were to become available. The first step in
 monitoring the model is to determine specific thresholds that we expect
 the model to stay above. We would want the model to maintain certain
-R\^2, RMSE, and MAE values in order to determine that the model is
-working correctly. One of the biggest concerns with our model is data
-drift. Since the Titanic sank over 100 years ago, the data that we are
-using from the model may not align with today relevant to ship travel
-today.
+Accuracy and F1 values in order to determine that the model is working
+correctly. The first level we are monitoring is Accuracy or F1 values
+falling below 70%. Once one of those values falls below 70% we would
+examine the test data to make sure the data is valid. Assuming the data
+is valid, we will keep a closer eye on the model performance moving
+forward. Once both Accuracy and F1 values fall below 70%, or one of the
+values falls below 60%, we will retrain the model on more recent data.
+
+One of the biggest concerns with our model is data drift. Since the
+Titanic sank over 100 years ago, the data that we are using from the
+model may not align with data relevant to ship travel today. Our
+expectation is that age is one data point that will look drastically
+different for ship travel today than it did for the Titanic simply due
+to the massive increase in life expectancy [@verywellhealth2024]. Due to
+this change, we will make sure to closely monitor age in new data and
+will adjust the model if we see the median age change by 20%.
+
+Another concern of ours is that there will be concept drift. It is
+possible that over time, the relationships between variables in the
+model will change, resulting in the model losing effectiveness. In order
+to account for this, we will continue to monitor correlations between
+the model variables and will adjust the model if we notice any large
+(greater than 20%) changes in the correlations.
+
+Overall, we will monitor our model to make sure it remains robust. Our
+assumptions are that a robust model will maintain both Accuracy and F1
+values of over 70%, while the correlations in the model remain fairly
+constant and new data doesn't appear to vary drastically from our
+training data. We will look for the model to keep Accuracy and F1 values
+above 70%, while also making sure that median age of new data doesn't
+change by more than 20% and that correlations between variables in the
+model don't change by more than 20%. If any of these events were to
+happen, we would look to retrain our model on more recent data in order
+to maintain model robustness.
 
 ::: pagebreak
 :::
 
 # Conclusion
 
-Summarize your results here. What is the best model for the data and
-why?
+As we can see from the comparing all three models. The "filtered.model"
+performed the best against the test data set. This is due to the removal
+insignificant variables until our model remained with only sigificant
+predictors. Multicollinarity seemed to be a big factor that impacted our
+models accuracy and F1. Once we removed indications multicollinarity, we
+could see that our models performance increased over the base model.
+
+However, with the "poisson.model", we see a decrease in accuracy
+compared the base model. This decrease is expected due to the nature of
+the poisson regression. The regression is most useful when the response
+variable is a count variable rather than a binary response. Thus a
+decrease in accuracy and F1 is expected against the base model.
+
+As a conclusion, the model reduced via p-values filtering is the best
+model to predict if a passenger were to survive, with an accuracy of
+84.28% and improved over the base model by 0.25%.
+
+```{r conclusion}
+#| tbl-cap: "Comparison of our base model, best performing developed model, and challenger model"
+data.frame(rbind(base.model.test.summary, 
+                 filtered.model.test.summary,
+                 poisson.model.test.summary))
+  
+```
 
 ::: pagebreak
 :::

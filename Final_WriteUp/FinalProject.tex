@@ -240,7 +240,7 @@
 \author{Author: Dinesh Bedathuru \and Author: Brian
 Calderon \and Author: Jeisson Hernandez \and Author: Hao Fu \and Author:
 Derek Rush \and Author: Jeremy Tajonera \and Author: Catherine Tully}
-\date{08 May 2025}
+\date{09 May 2025}
 
 \begin{document}
 \maketitle
@@ -352,19 +352,21 @@ explanations. A more formal.}
 
 \section{Executive Summary}\label{executive-summary}
 
-This section will describe the model usage, your conclusions and any
-regulatory and internal requirements. In a real world scenario, this
-section is for senior management who do not need to know the details.
-They need to know high level (the purpose of the model, limitations of
-the model and any issues).
+We have tested five different models of which four were logistics
+regression based and one was a poisson model. The best model with
+regards to predictive accuracy was a ``filtered'' logistic regression
+(filtered because we removed insignificant predictors) with an accuracy
+of 84.18\%.
+
+The final model shows that the most significant predictors of survival
+are: age, sex, and deck\_F.\\
+Below we show the final calculated function:
+
+\begin{verbatim}
+survived ~ 5.74 - 0.05 age - 0.025 sibsp + 0.80 pclass_1 + 1.82 pclass_2 - 3.27 sex_M + 0.83 embarked_C + 0.78 embarked_Q - 2.55 deck_A - 1.89 deck_B - 2.02 deck_C - 3.00 deck_D - 4.70 deck_F
+\end{verbatim}
 
 \section{Introduction}\label{introduction}
-
-This section needs to introduce the reader to the problem to be
-resolved, the purpose, and the scope of the statistical testing applied.
-What you are doing with your prediction? What is the purpose of the
-model? What methods were trained on the data, how large is the test
-sample, and how did you build the model?
 
 The Titanic was a British-registered ship that set sail on its maiden
 voyage on April 10th, 1912 with 2,240 passengers and crew on board. On
@@ -394,9 +396,10 @@ Based on the data cleaning we were able to only remove 2 rows from the
 data set. We used median imputation as well as KNN for various columns.
 We also dummified several categorical columns. We found that leaving
 sibsp and parch as continuous as opposed to categorical increased their
-contributions to the model performance \hyperref[appendix_A]{Appendix
-A}. Further, we also extracted the deck number and found that removing
-deck\_G from the model increased its performance.
+contributions to the model performance (See
+\hyperref[appendix_A]{Appendix A}). Further, we also extracted the deck
+number and found that removing deck\_G from the model increased its
+performance.
 
 \subsection{Loading the data}\label{loading-the-data}
 
@@ -482,6 +485,7 @@ removed.
 \begin{Highlighting}[]
 \CommentTok{\# {-}{-}{-}{-} Age{-}{-}{-}{-}}
 \CommentTok{\#Replace NAs in age column with Median value }
+\FunctionTok{set.seed}\NormalTok{ (}\DecValTok{1023}\NormalTok{)}
 \NormalTok{median\_age }\OtherTok{\textless{}{-}} \FunctionTok{median}\NormalTok{(data.clean}\SpecialCharTok{$}\NormalTok{age, }\AttributeTok{na.rm =} \ConstantTok{TRUE}\NormalTok{)}
 \NormalTok{data.clean }\OtherTok{\textless{}{-}}\NormalTok{ data.clean }\SpecialCharTok{\%\textgreater{}\%}
   \FunctionTok{mutate}\NormalTok{(}\AttributeTok{age =} \FunctionTok{ifelse}\NormalTok{(}\FunctionTok{is.na}\NormalTok{(age), median\_age, age))}
@@ -535,6 +539,7 @@ The following object is masked from 'package:datasets':
 \NormalTok{data.clean}\SpecialCharTok{$}\NormalTok{deck }\OtherTok{\textless{}{-}} \FunctionTok{as.factor}\NormalTok{(data.clean}\SpecialCharTok{$}\NormalTok{deck)}
 
 \CommentTok{\# Apply kNN imputation just to Cabin column}
+\FunctionTok{set.seed}\NormalTok{ (}\DecValTok{1023}\NormalTok{)}
 \NormalTok{data.clean }\OtherTok{\textless{}{-}} \FunctionTok{kNN}\NormalTok{(data.clean, }\AttributeTok{variable =} \StringTok{"deck"}\NormalTok{, }\AttributeTok{k =} \DecValTok{5}\NormalTok{)}
 
 \CommentTok{\# Check that NAs were imputed}
@@ -570,7 +575,7 @@ The following object is masked from 'package:datasets':
 
 We dummify pclass, sex, embarked and deck. We leave sibsp and parch as
 continuous variables as we observed that dummifying these columns leads
-to smaller significance \hyperref[appendix_A]{Appendix A}, whilst
+to smaller significance (See \hyperref[appendix_A]{Appendix A}), whilst
 leaving them as continuous maximizes their contributions to the models
 explanatory power.
 
@@ -755,23 +760,23 @@ initial conclusions:
 \end{Shaded}
 
 \begin{verbatim}
-              survived         age        sibsp        parch         fare
-survived    1.00000000 -0.04599216 -0.027543645  0.095720424  0.249620417
-age        -0.04599216  1.00000000 -0.154952394 -0.122885529  0.164477215
-sibsp      -0.02754365 -0.15495239  1.000000000  0.355216328  0.165296185
-parch       0.09572042 -0.12288553  0.355216328  1.000000000  0.209878267
-fare        0.24962042  0.16447722  0.165296185  0.209878267  1.000000000
-pclass_1    0.28432063  0.34847627 -0.022306615 -0.016451014  0.591163043
-pclass_2    0.06118909  0.01898825 -0.069089243 -0.017696720 -0.125637353
-sex_M      -0.53377358  0.05385130 -0.127066747 -0.243501842 -0.201776401
-embarked_C  0.14757622  0.05701305 -0.061215242 -0.001165488  0.272087792
-embarked_Q -0.02542950 -0.03373092 -0.060221066 -0.093253422 -0.126992379
-deck_A      0.02818626  0.12375210 -0.063208812 -0.046447535  0.060156186
-deck_B      0.17102793  0.11384754 -0.018056185  0.073894445  0.458426488
-deck_C      0.15622066  0.15548653  0.032030626 -0.054359774  0.314379308
-deck_D      0.11169173  0.07390772 -0.003562241  0.002702881  0.007239167
-deck_E      0.32472414  0.11407881 -0.082487921 -0.030305432 -0.017794021
-deck_F     -0.47931430 -0.28313314  0.052474332  0.010856728 -0.420674788
+              survived         age       sibsp        parch        fare
+survived    1.00000000 -0.04599216 -0.02754365  0.095720424  0.24962042
+age        -0.04599216  1.00000000 -0.15495239 -0.122885529  0.16447722
+sibsp      -0.02754365 -0.15495239  1.00000000  0.355216328  0.16529618
+parch       0.09572042 -0.12288553  0.35521633  1.000000000  0.20987827
+fare        0.24962042  0.16447722  0.16529618  0.209878267  1.00000000
+pclass_1    0.28432063  0.34847627 -0.02230662 -0.016451014  0.59116304
+pclass_2    0.06118909  0.01898825 -0.06908924 -0.017696720 -0.12563735
+sex_M      -0.53377358  0.05385130 -0.12706675 -0.243501842 -0.20177640
+embarked_C  0.14757622  0.05701305 -0.06121524 -0.001165488  0.27208779
+embarked_Q -0.02542950 -0.03373092 -0.06022107 -0.093253422 -0.12699238
+deck_A      0.01921839  0.11573201 -0.06315491 -0.054051764  0.06359762
+deck_B      0.15658451  0.12638063 -0.01583908  0.076255398  0.45645334
+deck_C      0.17861407  0.15235605  0.02822826 -0.049048850  0.30882422
+deck_D      0.08437944  0.10150497 -0.02726397 -0.029029703  0.01777467
+deck_E      0.33473867  0.11691545 -0.07405912 -0.016332073 -0.01633414
+deck_F     -0.47745405 -0.29217392  0.06499841  0.015200439 -0.42777519
               pclass_1    pclass_2       sex_M   embarked_C  embarked_Q
 survived    0.28432063  0.06118909 -0.53377358  0.147576220 -0.02542950
 age         0.34847627  0.01898825  0.05385130  0.057013047 -0.03373092
@@ -783,45 +788,45 @@ pclass_2   -0.30255006  1.00000000 -0.01057862 -0.143425262 -0.14105035
 sex_M      -0.11706927 -0.01057862  1.00000000 -0.040151739 -0.09800681
 embarked_C  0.28561105 -0.14342526 -0.04015174  1.000000000 -0.16362864
 embarked_Q -0.16373859 -0.14105035 -0.09800681 -0.163628636  1.00000000
-deck_A      0.27817486 -0.07214490  0.05726877  0.179563214 -0.06045425
-deck_B      0.42157158 -0.12290262 -0.10513911  0.197253957 -0.08030780
-deck_C      0.49783147 -0.09377853 -0.08157273  0.166128834 -0.07869333
-deck_D      0.11604898  0.04117623 -0.06599395  0.288111512 -0.09280535
-deck_E      0.06047826 -0.03335428 -0.07748047 -0.085668330 -0.08697346
-deck_F     -0.70753043  0.15770708  0.15681273 -0.353103247  0.22529873
-                deck_A      deck_B      deck_C       deck_D      deck_E
-survived    0.02818626  0.17102793  0.15622066  0.111691728  0.32472414
-age         0.12375210  0.11384754  0.15548653  0.073907716  0.11407881
-sibsp      -0.06320881 -0.01805619  0.03203063 -0.003562241 -0.08248792
-parch      -0.04644753  0.07389444 -0.05435977  0.002702881 -0.03030543
-fare        0.06015619  0.45842649  0.31437931  0.007239167 -0.01779402
-pclass_1    0.27817486  0.42157158  0.49783147  0.116048985  0.06047826
-pclass_2   -0.07214490 -0.12290262 -0.09377853  0.041176226 -0.03335428
-sex_M       0.05726877 -0.10513911 -0.08157273 -0.065993951 -0.07748047
-embarked_C  0.17956321  0.19725396  0.16612883  0.288111512 -0.08566833
-embarked_Q -0.06045425 -0.08030780 -0.07869333 -0.092805348 -0.08697346
-deck_A      1.00000000 -0.04808710 -0.06241531 -0.055570446 -0.06660453
-deck_B     -0.04808710  1.00000000 -0.08291288 -0.073820128 -0.08847788
-deck_C     -0.06241531 -0.08291288  1.00000000 -0.095815832 -0.11484105
-deck_D     -0.05557045 -0.07382013 -0.09581583  1.000000000 -0.10224685
-deck_E     -0.06660453 -0.08847788 -0.11484105 -0.102246852  1.00000000
-deck_F     -0.23590750 -0.31338100 -0.40675710 -0.362149521 -0.43405805
+deck_A      0.28790374 -0.08080438  0.05888172  0.167298858 -0.05745333
+deck_B      0.42601897 -0.11327680 -0.09133967  0.182056642 -0.08108169
+deck_C      0.48876162 -0.07908768 -0.09801461  0.169699800 -0.08023736
+deck_D      0.15200710  0.04093807 -0.03323992  0.248144405 -0.07224766
+deck_E      0.05822613 -0.02663532 -0.08900107 -0.078527161 -0.08770239
+deck_F     -0.72064119  0.14341225  0.15235799 -0.319688792  0.21273851
+                deck_A      deck_B      deck_C      deck_D      deck_E
+survived    0.01921839  0.15658451  0.17861407  0.08437944  0.33473867
+age         0.11573201  0.12638063  0.15235605  0.10150497  0.11691545
+sibsp      -0.06315491 -0.01583908  0.02822826 -0.02726397 -0.07405912
+parch      -0.05405176  0.07625540 -0.04904885 -0.02902970 -0.01633207
+fare        0.06359762  0.45645334  0.30882422  0.01777467 -0.01633414
+pclass_1    0.28790374  0.42601897  0.48876162  0.15200710  0.05822613
+pclass_2   -0.08080438 -0.11327680 -0.07908768  0.04093807 -0.02663532
+sex_M       0.05888172 -0.09133967 -0.09801461 -0.03323992 -0.08900107
+embarked_C  0.16729886  0.18205664  0.16969980  0.24814440 -0.07852716
+embarked_Q -0.05745333 -0.08108169 -0.08023736 -0.07224766 -0.08770239
+deck_A      1.00000000 -0.04614047 -0.06005247 -0.04955727 -0.06365303
+deck_B     -0.04614047  1.00000000 -0.08474977 -0.06993828 -0.08983109
+deck_C     -0.06005247 -0.08474977  1.00000000 -0.09102568 -0.11691645
+deck_D     -0.04955727 -0.06993828 -0.09102568  1.00000000 -0.09648328
+deck_E     -0.06365303 -0.08983109 -0.11691645 -0.09648328  1.00000000
+deck_F     -0.22835159 -0.32226388 -0.41943104 -0.34612824 -0.44457878
                 deck_F
-survived   -0.47931430
-age        -0.28313314
-sibsp       0.05247433
-parch       0.01085673
-fare       -0.42067479
-pclass_1   -0.70753043
-pclass_2    0.15770708
-sex_M       0.15681273
-embarked_C -0.35310325
-embarked_Q  0.22529873
-deck_A     -0.23590750
-deck_B     -0.31338100
-deck_C     -0.40675710
-deck_D     -0.36214952
-deck_E     -0.43405805
+survived   -0.47745405
+age        -0.29217392
+sibsp       0.06499841
+parch       0.01520044
+fare       -0.42777519
+pclass_1   -0.72064119
+pclass_2    0.14341225
+sex_M       0.15235799
+embarked_C -0.31968879
+embarked_Q  0.21273851
+deck_A     -0.22835159
+deck_B     -0.32226388
+deck_C     -0.41943104
+deck_D     -0.34612824
+deck_E     -0.44457878
 deck_F      1.00000000
 \end{verbatim}
 
@@ -1046,6 +1051,7 @@ The following object is masked from 'package:purrr':
 \begin{Shaded}
 \begin{Highlighting}[]
 \CommentTok{\# Log model on train data:}
+\FunctionTok{set.seed}\NormalTok{ (}\DecValTok{1023}\NormalTok{)}
 \NormalTok{lmod }\OtherTok{\textless{}{-}} \FunctionTok{glm}\NormalTok{(survived }\SpecialCharTok{\textasciitilde{}}\NormalTok{ ., }\AttributeTok{family =}\NormalTok{ binomial, }\AttributeTok{data =}\NormalTok{ train)}
 \CommentTok{\# summary(lmod)}
 \FunctionTok{vif}\NormalTok{(lmod)}
@@ -1054,11 +1060,11 @@ The following object is masked from 'package:purrr':
 
 \begin{verbatim}
        age      sibsp      parch       fare   pclass_1   pclass_2      sex_M 
-  1.493399   1.258340   1.281859   1.727034   4.267734   1.560100   1.604117 
+  1.487819   1.241500   1.283338   1.720620   4.661296   1.574259   1.619104 
 embarked_C embarked_Q     deck_A     deck_B     deck_C     deck_D     deck_E 
-  1.513511   1.397623   4.532575   4.848833   7.604802   6.662169   6.091048 
+  1.433942   1.368562   5.122014   6.161202   9.446197   7.824253   7.280808 
     deck_F 
- 14.919819 
+ 18.174852 
 \end{verbatim}
 
 \begin{Shaded}
@@ -1109,8 +1115,8 @@ embarked_C embarked_Q     deck_A     deck_B     deck_C     deck_D     deck_E
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-base.model.train & 0.8471616 & 0.8071625 \\
-base.model.test & 0.8367347 & 0.7730496 \\
+base.model.train & 0.8504367 & 0.8115543 \\
+base.model.test & 0.8392857 & 0.7758007 \\
 \end{longtable}
 
 \begin{Shaded}
@@ -1126,30 +1132,30 @@ glm(formula = survived ~ ., family = binomial, data = train)
 
 Coefficients:
               Estimate Std. Error z value Pr(>|z|)    
-(Intercept)  5.3284111  0.8287318   6.430 1.28e-10 ***
-age         -0.0557904  0.0090406  -6.171 6.78e-10 ***
-sibsp       -0.2761926  0.1235912  -2.235  0.02544 *  
-parch        0.0250325  0.1186751   0.211  0.83294    
-fare         0.0001907  0.0023082   0.083  0.93415    
-pclass_1     0.8206018  0.4454290   1.842  0.06544 .  
-pclass_2     1.8580626  0.2991637   6.211 5.27e-10 ***
-sex_M       -3.2522858  0.2555063 -12.729  < 2e-16 ***
-embarked_C   0.6313152  0.2939442   2.148  0.03173 *  
-embarked_Q   0.8927717  0.3642358   2.451  0.01424 *  
-deck_A      -1.9122914  0.9044640  -2.114  0.03449 *  
-deck_B      -1.2596191  0.9199589  -1.369  0.17093    
-deck_C      -1.6453843  0.8501358  -1.935  0.05294 .  
-deck_D      -2.3295283  0.8315684  -2.801  0.00509 ** 
-deck_E       0.4168948  0.8021132   0.520  0.60324    
-deck_F      -4.3018644  0.7733641  -5.563 2.66e-08 ***
+(Intercept)  5.386e+00  8.913e-01   6.042 1.52e-09 ***
+age         -5.396e-02  9.051e-03  -5.962 2.49e-09 ***
+sibsp       -2.538e-01  1.205e-01  -2.106  0.03520 *  
+parch        1.371e-02  1.185e-01   0.116  0.90790    
+fare        -6.976e-05  2.289e-03  -0.030  0.97568    
+pclass_1     7.953e-01  4.670e-01   1.703  0.08856 .  
+pclass_2     1.829e+00  3.011e-01   6.073 1.25e-09 ***
+sex_M       -3.274e+00  2.566e-01 -12.756  < 2e-16 ***
+embarked_C   8.299e-01  2.877e-01   2.884  0.00393 ** 
+embarked_Q   7.944e-01  3.602e-01   2.205  0.02744 *  
+deck_A      -2.166e+00  1.011e+00  -2.143  0.03212 *  
+deck_B      -1.510e+00  1.006e+00  -1.501  0.13338    
+deck_C      -1.646e+00  9.553e-01  -1.723  0.08484 .  
+deck_D      -2.616e+00  9.310e-01  -2.810  0.00495 ** 
+deck_E       4.274e-01  8.975e-01   0.476  0.63393    
+deck_F      -4.342e+00  8.572e-01  -5.065 4.08e-07 ***
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 (Dispersion parameter for binomial family taken to be 1)
 
     Null deviance: 1230.15  on 915  degrees of freedom
-Residual deviance:  635.57  on 900  degrees of freedom
-AIC: 667.57
+Residual deviance:  634.78  on 900  degrees of freedom
+AIC: 666.78
 
 Number of Fisher Scoring iterations: 6
 \end{verbatim}
@@ -1179,13 +1185,22 @@ Number of Fisher Scoring iterations: 6
 
 \section{Model Performance Testing}\label{model-performance-testing}
 
-We compare four different models: 1) Base log. model 2) Model with
-insig. pred. removed 3) Stepwise model 4) Model with high vif pred.
-removed
+We compare four different models:
 
-When comparing the accuracy and F1 score on all models the base model
-was still the highest performer and we decided to use that as the
-champion model until now.
+1) Base log. model (lmod)
+
+2) Model with insig. pred. removed (filtered.model)
+
+3) Stepwise model (step.model)
+
+4) Model with high vif pred. removed (vif.model)
+
+When comparing the accuracy and F1 score on all models the filtered
+model was the highest performer and we decided to use that as the
+champion model until now. We suspect that multicollinearity among the
+decks has an impact on the model performance which is why removing these
+collinear predictors and filtering for insignificant variables improved
+the model slightly against the based model (+0.3\%).
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -1277,7 +1292,7 @@ Warning in drop1.glm(model, test = "F"): F test assumes 'quasibinomial' family
 \end{verbatim}
 
 \begin{verbatim}
-Removing: fare with p-value 0.9215538 
+Removing: fare with p-value 0.9710719 
 \end{verbatim}
 
 \begin{verbatim}
@@ -1285,7 +1300,7 @@ Warning in drop1.glm(model, test = "F"): F test assumes 'quasibinomial' family
 \end{verbatim}
 
 \begin{verbatim}
-Removing: parch with p-value 0.7803802 
+Removing: parch with p-value 0.894389 
 \end{verbatim}
 
 \begin{verbatim}
@@ -1293,7 +1308,7 @@ Warning in drop1.glm(model, test = "F"): F test assumes 'quasibinomial' family
 \end{verbatim}
 
 \begin{verbatim}
-Removing: deck_E with p-value 0.5506678 
+Removing: deck_E with p-value 0.5871368 
 \end{verbatim}
 
 \begin{verbatim}
@@ -1348,14 +1363,14 @@ Step    Variable            AIC         SBC            SBIC           R2       A
 --------------------------------------------------------------------------------------
  0      Base Model        1293.366    1303.006     -28281799.310    0.00000    0.00000 
  1      sex_M (+)          988.183    1002.643     -55309468.385    0.28491    0.28413 
- 2      deck_F (+)         757.429     776.709     -91941771.510    0.44537    0.44415 
- 3      age (+)            725.480     749.580     -99004330.024    0.46555    0.46379 
- 4      pclass_2 (+)       696.998     725.918    -105806102.781    0.48304    0.48077 
- 5      deck_E (+)         673.931     707.671    -111746149.031    0.49700    0.49423 
- 6      sibsp (+)          667.234     705.794    -113874510.309    0.50175    0.49846 
- 7      deck_D (+)         663.423     706.804    -115313992.417    0.50490    0.50108 
- 8      embarked_Q (+)     661.553     709.753    -116277909.273    0.50699    0.50264 
- 9      embarked_Q (-)     663.423     706.804    -115313992.417    0.50490    0.50108 
+ 2      deck_F (+)         757.110     776.390     -92005909.772    0.44556    0.44435 
+ 3      age (+)            723.096     747.196     -99521155.302    0.46694    0.46518 
+ 4      pclass_2 (+)       697.456     726.376    -105700242.392    0.48278    0.48051 
+ 5      deck_E (+)         674.236     707.976    -111671761.113    0.49683    0.49406 
+ 6      sibsp (+)          668.302     706.862    -113609066.331    0.50117    0.49788 
+ 7      deck_D (+)         664.319     707.699    -115088607.776    0.50442    0.50059 
+ 8      embarked_Q (+)     663.468     711.668    -115792422.465    0.50596    0.50160 
+ 9      embarked_Q (-)     664.319     707.699    -115088607.776    0.50442    0.50059 
 --------------------------------------------------------------------------------------
 
 Final Model Output 
@@ -1363,11 +1378,11 @@ Final Model Output
 
                          Model Summary                          
 ---------------------------------------------------------------
-R                       0.711       RMSE                 0.344 
-R-Squared               0.505       MSE                  0.118 
-Adj. R-Squared          0.501       Coef. Var           87.229 
-Pred R-Squared          0.495       AIC                663.423 
-MAE                     0.261       SBC                706.804 
+R                       0.710       RMSE                 0.344 
+R-Squared               0.504       MSE                  0.119 
+Adj. R-Squared          0.501       Coef. Var           87.272 
+Pred R-Squared          0.495       AIC                664.319 
+MAE                     0.262       SBC                707.699 
 ---------------------------------------------------------------
  RMSE: Root Mean Square Error 
  MSE: Mean Square Error 
@@ -1380,8 +1395,8 @@ MAE                     0.261       SBC                706.804
                Sum of                                                
               Squares         DF    Mean Square       F         Sig. 
 ---------------------------------------------------------------------
-Regression    110.647          7         15.807    132.282    0.0000 
-Residual      108.500        908          0.119                      
+Regression    110.541          7         15.792    132.026    0.0000 
+Residual      108.606        908          0.120                      
 Total         219.147        915                                     
 ---------------------------------------------------------------------
 
@@ -1389,14 +1404,14 @@ Total         219.147        915
 -----------------------------------------------------------------------------------------
       model      Beta    Std. Error    Std. Beta       t        Sig      lower     upper 
 -----------------------------------------------------------------------------------------
-(Intercept)     1.128         0.044                  25.918    0.000     1.043     1.213 
-      sex_M    -0.465         0.024       -0.458    -19.077    0.000    -0.513    -0.418 
-     deck_F    -0.450         0.031       -0.450    -14.496    0.000    -0.511    -0.389 
-        age    -0.006         0.001       -0.170     -6.842    0.000    -0.008    -0.005 
-   pclass_2     0.156         0.028        0.132      5.491    0.000     0.100     0.211 
-     deck_E     0.165         0.043        0.105      3.842    0.000     0.081     0.249 
-      sibsp    -0.032         0.011       -0.071     -2.957    0.003    -0.054    -0.011 
-     deck_D    -0.116         0.048       -0.064     -2.404    0.016    -0.211    -0.021 
+(Intercept)     1.131         0.043                  26.050    0.000     1.046     1.216 
+      sex_M    -0.464         0.024       -0.457    -19.025    0.000    -0.512    -0.416 
+     deck_F    -0.447         0.031       -0.445    -14.444    0.000    -0.508    -0.387 
+        age    -0.006         0.001       -0.171     -6.871    0.000    -0.008    -0.005 
+   pclass_2     0.147         0.028        0.124      5.193    0.000     0.091     0.202 
+     deck_E     0.169         0.043        0.108      3.942    0.000     0.085     0.253 
+      sibsp    -0.031         0.011       -0.068     -2.848    0.005    -0.052    -0.010 
+     deck_D    -0.123         0.050       -0.064     -2.439    0.015    -0.222    -0.024 
 -----------------------------------------------------------------------------------------
 \end{verbatim}
 
@@ -1418,23 +1433,23 @@ glm(formula = survived ~ sex_M + deck_F + age + deck_E + pclass_2 +
 
 Coefficients:
              Estimate Std. Error z value Pr(>|z|)    
-(Intercept)  4.027276   0.443292   9.085  < 2e-16 ***
-sex_M       -3.228025   0.242958 -13.286  < 2e-16 ***
-deck_F      -2.649341   0.335751  -7.891 3.00e-15 ***
-age         -0.054754   0.008774  -6.241 4.36e-10 ***
-deck_E       1.823622   0.376762   4.840 1.30e-06 ***
-pclass_2     1.472120   0.270394   5.444 5.20e-08 ***
-pclass_1     0.531123   0.376285   1.411  0.15810    
-sibsp       -0.324078   0.115699  -2.801  0.00509 ** 
-fare         0.001937   0.002089   0.927  0.35379    
+(Intercept)  4.039203   0.452351   8.929  < 2e-16 ***
+sex_M       -3.223591   0.242196 -13.310  < 2e-16 ***
+deck_F      -2.635131   0.348620  -7.559 4.07e-14 ***
+age         -0.053691   0.008709  -6.165 7.05e-10 ***
+deck_E       1.898805   0.387471   4.901 9.56e-07 ***
+pclass_2     1.407566   0.270017   5.213 1.86e-07 ***
+pclass_1     0.453560   0.388459   1.168  0.24297    
+sibsp       -0.305368   0.112220  -2.721  0.00651 ** 
+fare         0.001986   0.002090   0.951  0.34181    
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 (Dispersion parameter for binomial family taken to be 1)
 
     Null deviance: 1230.15  on 915  degrees of freedom
-Residual deviance:  652.91  on 907  degrees of freedom
-AIC: 670.91
+Residual deviance:  654.59  on 907  degrees of freedom
+AIC: 672.59
 
 Number of Fisher Scoring iterations: 6
 \end{verbatim}
@@ -1455,22 +1470,22 @@ glm(formula = survived ~ sex_M + deck_F + age + deck_E + pclass_2 +
 
 Coefficients:
              Estimate Std. Error z value Pr(>|z|)    
-(Intercept)  4.075133   0.441121   9.238  < 2e-16 ***
-sex_M       -3.250356   0.241996 -13.431  < 2e-16 ***
-deck_F      -2.671528   0.335679  -7.959 1.74e-15 ***
-age         -0.054914   0.008763  -6.266 3.70e-10 ***
-deck_E       1.802546   0.376305   4.790 1.67e-06 ***
-pclass_2     1.497212   0.269700   5.551 2.83e-08 ***
-pclass_1     0.658065   0.351293   1.873  0.06103 .  
-sibsp       -0.305711   0.113440  -2.695  0.00704 ** 
+(Intercept)  4.089766   0.450105   9.086  < 2e-16 ***
+sex_M       -3.246187   0.241244 -13.456  < 2e-16 ***
+deck_F      -2.659167   0.348576  -7.629 2.37e-14 ***
+age         -0.053845   0.008699  -6.190 6.02e-10 ***
+deck_E       1.874294   0.386905   4.844 1.27e-06 ***
+pclass_2     1.432280   0.269447   5.316 1.06e-07 ***
+pclass_1     0.582248   0.364952   1.595  0.11062    
+sibsp       -0.286517   0.109911  -2.607  0.00914 ** 
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 (Dispersion parameter for binomial family taken to be 1)
 
     Null deviance: 1230.15  on 915  degrees of freedom
-Residual deviance:  653.81  on 908  degrees of freedom
-AIC: 669.81
+Residual deviance:  655.53  on 908  degrees of freedom
+AIC: 671.53
 
 Number of Fisher Scoring iterations: 6
 \end{verbatim}
@@ -1508,11 +1523,11 @@ Number of Fisher Scoring iterations: 6
 
 \begin{verbatim}
        age      sibsp      parch       fare   pclass_1   pclass_2      sex_M 
-  1.493399   1.258340   1.281859   1.727034   4.267734   1.560100   1.604117 
+  1.487819   1.241500   1.283338   1.720620   4.661296   1.574259   1.619104 
 embarked_C embarked_Q     deck_A     deck_B     deck_C     deck_D     deck_E 
-  1.513511   1.397623   4.532575   4.848833   7.604802   6.662169   6.091048 
+  1.433942   1.368562   5.122014   6.161202   9.446197   7.824253   7.280808 
     deck_F 
- 14.919819 
+ 18.174852 
 \end{verbatim}
 
 \begin{Shaded}
@@ -1524,9 +1539,9 @@ embarked_C embarked_Q     deck_A     deck_B     deck_C     deck_D     deck_E
 
 \begin{verbatim}
        age      sibsp      parch       fare   pclass_1   pclass_2      sex_M 
-  1.481259   1.236486   1.275733   1.729266   4.369376   1.472982   1.452735 
+  1.477874   1.230404   1.274009   1.720786   4.741756   1.481905   1.468964 
 embarked_C embarked_Q     deck_A     deck_B     deck_C     deck_D     deck_E 
-  1.511473   1.348123   1.988884   2.269651   2.863440   1.737448   1.558559 
+  1.420600   1.325908   1.986762   2.357338   3.004607   1.736194   1.557128 
 \end{verbatim}
 
 \begin{Shaded}
@@ -1728,33 +1743,55 @@ match.
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-base.model.train & 0.8471616 & 0.8071625 \\
-base.model.test & 0.8367347 & 0.7730496 \\
-stepwise.model.train & 0.8220524 & 0.7687943 \\
-stepwise.model.test & 0.8418367 & 0.7669173 \\
-filtered.model.train & 0.8471616 & 0.8066298 \\
-filtered.model.test & 0.8367347 & 0.7730496 \\
-vif.model.train & 0.8329694 & 0.7877947 \\
-vif.model.test & 0.8367347 & 0.7746479 \\
+base.model.train & 0.8504367 & 0.8115543 \\
+base.model.test & 0.8392857 & 0.7758007 \\
+stepwise.model.train & 0.8231441 & 0.7692308 \\
+stepwise.model.test & 0.8367347 & 0.7611940 \\
+filtered.model.train & 0.8504367 & 0.8115543 \\
+filtered.model.test & 0.8418367 & 0.7801418 \\
+vif.model.train & 0.8351528 & 0.7911480 \\
+vif.model.test & 0.8392857 & 0.7789474 \\
 \end{longtable}
 
 \section{Challenger Models}\label{challenger-models}
 
-Build an alternative model based on one of the following approaches to
-predict survival as applicable:logistic regression, decision tree, NN,
-or SVM, Poisson regression or negative binomial. Check the applicable
-model assumptions. Apply in-sample and out-of-sample testing, back
-testing and review the comparative goodness of fit of the candidate
-models. Describe step by step your procedure to get to the best model
-and why you believe it is fit for purpose.
+We decided to build a Poisson model for our challenger model. After
+building our original poisson model, we first check to see if the
+variables are important.
+
+Ho: Variables are not important
+
+Ha: Variable are important
+
+Since we have a p-value of 0, we reject the null hypothesis. Variables
+are important.
+
+Our poisson model has three significant variables, pclass\_2, sex\_M,
+and deck\_F with an alpha of 0.05.
+
+According to the poisson regression:
+
+The odds of survival increases by 37.6\% when the passenger is second
+class. ((exp(0.31918) - 1) * 100)
+
+The odds of survival decreases by 68.14\% when the passenger is male.
+((exp(-1.144) - 1) * 100)
+
+The odds of survival decreases by 64.76\% when the passenger is from
+deck G. ((exp(-1.043) - 1) * 100)
+
+Our Poisson Regression has an accuracy of 74.74\% with optimal
+cutoﬀ(.17) based on max F1 score (0.71954).
 
 \begin{Shaded}
 \begin{Highlighting}[]
 \FunctionTok{library}\NormalTok{(MASS)}
 
 \CommentTok{\# Train base Poisson model:}
-\NormalTok{poissonReg }\OtherTok{\textless{}{-}} \FunctionTok{glm}\NormalTok{(survived }\SpecialCharTok{\textasciitilde{}}\NormalTok{ .,}\AttributeTok{family=}\NormalTok{poisson, train)}
-\FunctionTok{summary}\NormalTok{(poissonReg)}
+\NormalTok{poissonReg\_full }\OtherTok{\textless{}{-}} \FunctionTok{glm}\NormalTok{(survived }\SpecialCharTok{\textasciitilde{}}\NormalTok{ .,}\AttributeTok{family=}\NormalTok{poisson, train)}
+
+\CommentTok{\# compare the fitted model to the null model and calculate if the variables are important}
+\FunctionTok{summary}\NormalTok{(poissonReg\_full)}
 \end{Highlighting}
 \end{Shaded}
 
@@ -1765,38 +1802,37 @@ glm(formula = survived ~ ., family = poisson, data = train)
 
 Coefficients:
               Estimate Std. Error z value Pr(>|z|)    
-(Intercept)  7.519e-01  3.472e-01   2.166 0.030341 *  
-age         -1.668e-02  4.337e-03  -3.847 0.000119 ***
-sibsp       -7.014e-02  6.994e-02  -1.003 0.315889    
-parch        1.132e-02  6.704e-02   0.169 0.865869    
-fare         9.688e-05  1.025e-03   0.095 0.924696    
-pclass_1     3.485e-01  1.987e-01   1.754 0.079421 .  
-pclass_2     5.468e-01  1.515e-01   3.609 0.000307 ***
-sex_M       -1.088e+00  1.199e-01  -9.069  < 2e-16 ***
-embarked_C   7.474e-02  1.362e-01   0.549 0.583046    
-embarked_Q   5.098e-01  2.183e-01   2.335 0.019548 *  
-deck_A      -5.113e-01  4.521e-01  -1.131 0.258009    
-deck_B      -5.677e-01  4.064e-01  -1.397 0.162402    
-deck_C      -6.456e-01  3.912e-01  -1.650 0.098877 .  
-deck_D      -6.580e-01  3.820e-01  -1.722 0.084985 .  
-deck_E      -1.870e-01  3.526e-01  -0.530 0.595781    
-deck_F      -1.540e+00  3.413e-01  -4.513 6.38e-06 ***
+(Intercept)  7.787e-01  3.449e-01   2.258 0.023946 *  
+age         -1.609e-02  4.355e-03  -3.695 0.000220 ***
+sibsp       -6.954e-02  6.979e-02  -0.996 0.319019    
+parch       -5.055e-04  6.756e-02  -0.007 0.994030    
+fare         9.289e-05  1.025e-03   0.091 0.927778    
+pclass_1     3.590e-01  2.047e-01   1.753 0.079536 .  
+pclass_2     5.102e-01  1.532e-01   3.329 0.000871 ***
+sex_M       -1.095e+00  1.201e-01  -9.112  < 2e-16 ***
+embarked_C   1.072e-01  1.349e-01   0.795 0.426660    
+embarked_Q   4.537e-01  2.162e-01   2.098 0.035872 *  
+deck_A      -6.157e-01  4.732e-01  -1.301 0.193282    
+deck_B      -6.494e-01  4.130e-01  -1.572 0.115868    
+deck_C      -6.891e-01  3.943e-01  -1.748 0.080527 .  
+deck_D      -7.195e-01  3.962e-01  -1.816 0.069347 .  
+deck_E      -2.300e-01  3.556e-01  -0.647 0.517786    
+deck_F      -1.527e+00  3.419e-01  -4.467 7.94e-06 ***
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 (Dispersion parameter for poisson family taken to be 1)
 
     Null deviance: 672.00  on 915  degrees of freedom
-Residual deviance: 400.84  on 900  degrees of freedom
-AIC: 1158.8
+Residual deviance: 404.15  on 900  degrees of freedom
+AIC: 1162.2
 
 Number of Fisher Scoring iterations: 5
 \end{verbatim}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\CommentTok{\# compare the fitted model to the null model}
-\DecValTok{1}\SpecialCharTok{{-}}\FunctionTok{pchisq}\NormalTok{(}\FloatTok{672.34{-}390.72}\NormalTok{, }\FunctionTok{length}\NormalTok{(}\FunctionTok{coef}\NormalTok{(poissonReg)))}
+\DecValTok{1}\SpecialCharTok{{-}}\FunctionTok{pchisq}\NormalTok{(}\FloatTok{672.00{-}409.95}\NormalTok{, }\FunctionTok{length}\NormalTok{(}\FunctionTok{coef}\NormalTok{(poissonReg\_full)) }\SpecialCharTok{{-}} \DecValTok{1}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
@@ -1806,38 +1842,28 @@ Number of Fisher Scoring iterations: 5
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{anova}\NormalTok{(poissonReg,}\AttributeTok{test=}\StringTok{"Chi"}\NormalTok{)}
+\CommentTok{\# We then reduce the model and see if the removed variables are significant}
+\NormalTok{poissonReg\_reduced }\OtherTok{\textless{}{-}} \FunctionTok{glm}\NormalTok{(survived }\SpecialCharTok{\textasciitilde{}}\NormalTok{ pclass\_2}\SpecialCharTok{+}\NormalTok{sex\_M}\SpecialCharTok{+}\NormalTok{deck\_F,}\AttributeTok{family=}\NormalTok{poisson, train)}
+
+\CommentTok{\# Verify that all variables are significant and no more can be dropped}
+\FunctionTok{anova}\NormalTok{(poissonReg\_reduced, poissonReg\_full, }\AttributeTok{test=}\StringTok{"Chi"}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
-\begin{longtable}[]{@{}lrrrrr@{}}
+\begin{longtable}[]{@{}rrrrr@{}}
 \toprule\noalign{}
-& Df & Deviance & Resid. Df & Resid. Dev & Pr(\textgreater Chi) \\
+Resid. Df & Resid. Dev & Df & Deviance & Pr(\textgreater Chi) \\
 \midrule\noalign{}
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-NULL & NA & NA & 915 & 671.9954 & NA \\
-age & 1 & 1.1812909 & 914 & 670.8141 & 0.2770933 \\
-sibsp & 1 & 0.7166530 & 913 & 670.0975 & 0.3972440 \\
-parch & 1 & 5.6694845 & 912 & 664.4280 & 0.0172625 \\
-fare & 1 & 25.6933009 & 911 & 638.7347 & 0.0000004 \\
-pclass\_1 & 1 & 27.9481171 & 910 & 610.7866 & 0.0000001 \\
-pclass\_2 & 1 & 17.1639017 & 909 & 593.6227 & 0.0000343 \\
-sex\_M & 1 & 118.6444922 & 908 & 474.9782 & 0.0000000 \\
-embarked\_C & 1 & 1.6665466 & 907 & 473.3116 & 0.1967217 \\
-embarked\_Q & 1 & 0.0858234 & 906 & 473.2258 & 0.7695556 \\
-deck\_A & 1 & 0.0631207 & 905 & 473.1627 & 0.8016298 \\
-deck\_B & 1 & 0.0077426 & 904 & 473.1549 & 0.9298829 \\
-deck\_C & 1 & 0.0326392 & 903 & 473.1223 & 0.8566319 \\
-deck\_D & 1 & 0.5268888 & 902 & 472.5954 & 0.4679178 \\
-deck\_E & 1 & 57.6272332 & 901 & 414.9682 & 0.0000000 \\
-deck\_F & 1 & 14.1318730 & 900 & 400.8363 & 0.0001704 \\
+912 & 430.4971 & NA & NA & NA \\
+900 & 404.1538 & 12 & 26.34334 & 0.0095947 \\
 \end{longtable}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\FunctionTok{drop1}\NormalTok{(poissonReg,}\AttributeTok{test=}\StringTok{"Chi"}\NormalTok{)}
+\FunctionTok{drop1}\NormalTok{(poissonReg\_reduced,}\AttributeTok{test=}\StringTok{"Chi"}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
@@ -1848,35 +1874,40 @@ deck\_F & 1 & 14.1318730 & 900 & 400.8363 & 0.0001704 \\
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-& NA & 400.8363 & 1158.836 & NA & NA \\
-age & 1 & 416.0444 & 1172.044 & 15.2080992 & 0.0000963 \\
-sibsp & 1 & 401.8958 & 1157.896 & 1.0594618 & 0.3033380 \\
-parch & 1 & 400.8646 & 1156.865 & 0.0282941 & 0.8664193 \\
-fare & 1 & 400.8452 & 1156.845 & 0.0088926 & 0.9248705 \\
-pclass\_1 & 1 & 403.9035 & 1159.903 & 3.0671630 & 0.0798888 \\
-pclass\_2 & 1 & 413.5888 & 1169.589 & 12.7524939 & 0.0003555 \\
-sex\_M & 1 & 489.9790 & 1245.979 & 89.1427013 & 0.0000000 \\
-embarked\_C & 1 & 401.1362 & 1157.136 & 0.2998976 & 0.5839466 \\
-embarked\_Q & 1 & 405.8500 & 1161.850 & 5.0137077 & 0.0251474 \\
-deck\_A & 1 & 402.0796 & 1158.080 & 1.2432486 & 0.2648459 \\
-deck\_B & 1 & 402.6560 & 1158.656 & 1.8197039 & 0.1773485 \\
-deck\_C & 1 & 403.3130 & 1159.313 & 2.4766883 & 0.1155453 \\
-deck\_D & 1 & 403.5115 & 1159.511 & 2.6751598 & 0.1019251 \\
-deck\_E & 1 & 401.1067 & 1157.107 & 0.2703827 & 0.6030752 \\
-deck\_F & 1 & 414.9682 & 1170.968 & 14.1318730 & 0.0001704 \\
+& NA & 430.4971 & 1164.497 & NA & NA \\
+pclass\_2 & 1 & 436.9472 & 1168.947 & 6.450073 & 0.0110948 \\
+sex\_M & 1 & 540.1126 & 1272.113 & 109.615481 & 0.0000000 \\
+deck\_F & 1 & 520.5287 & 1252.529 & 90.031585 & 0.0000000 \\
 \end{longtable}
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\CommentTok{\# Testing against test data}
-\NormalTok{predicted\_probs }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(poissonReg, }\AttributeTok{newdata =}\NormalTok{ test, }\AttributeTok{type =} \StringTok{"response"}\NormalTok{)}
+\DocumentationTok{\#\#\# Train Data}
+
+\CommentTok{\# Testing against train data}
+\NormalTok{predicted\_probs }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(poissonReg\_reduced, }\AttributeTok{newdata =}\NormalTok{ train, }\AttributeTok{type =} \StringTok{"response"}\NormalTok{)}
 
 \CommentTok{\# Get the results of different cutoff values}
-\NormalTok{testResult}\OtherTok{\textless{}{-}}\FunctionTok{cutoff.prg}\NormalTok{(predicted\_probs,test}\SpecialCharTok{$}\NormalTok{survived)}
+\NormalTok{trainResult}\OtherTok{\textless{}{-}}\FunctionTok{cutoff.prg}\NormalTok{(predicted\_probs,train}\SpecialCharTok{$}\NormalTok{survived)}
 \end{Highlighting}
 \end{Shaded}
 
 \begin{verbatim}
+Warning in confusionMatrix.default(as.factor(predictions), as.factor(act), :
+Levels are not in the same order for reference and data. Refactoring data to
+match.
+Warning in confusionMatrix.default(as.factor(predictions), as.factor(act), :
+Levels are not in the same order for reference and data. Refactoring data to
+match.
+Warning in confusionMatrix.default(as.factor(predictions), as.factor(act), :
+Levels are not in the same order for reference and data. Refactoring data to
+match.
+Warning in confusionMatrix.default(as.factor(predictions), as.factor(act), :
+Levels are not in the same order for reference and data. Refactoring data to
+match.
+Warning in confusionMatrix.default(as.factor(predictions), as.factor(act), :
+Levels are not in the same order for reference and data. Refactoring data to
+match.
 Warning in confusionMatrix.default(as.factor(predictions), as.factor(act), :
 Levels are not in the same order for reference and data. Refactoring data to
 match.
@@ -1903,7 +1934,7 @@ match.
 \begin{Shaded}
 \begin{Highlighting}[]
 \CommentTok{\# We get get the optimal p cut off value based on the maximum F1 score}
-\FunctionTok{plot}\NormalTok{(testResult[,}\DecValTok{1}\NormalTok{],testResult[,}\DecValTok{8}\NormalTok{],}\AttributeTok{xlab=}\StringTok{"cut off"}\NormalTok{,}\AttributeTok{ylab=}\StringTok{"F1"}\NormalTok{)}
+\FunctionTok{plot}\NormalTok{(trainResult[,}\DecValTok{1}\NormalTok{],trainResult[,}\DecValTok{8}\NormalTok{],}\AttributeTok{xlab=}\StringTok{"cut off"}\NormalTok{,}\AttributeTok{ylab=}\StringTok{"F1"}\NormalTok{)}
 \end{Highlighting}
 \end{Shaded}
 
@@ -1911,36 +1942,110 @@ match.
 
 \begin{Shaded}
 \begin{Highlighting}[]
-\NormalTok{testResult[}\FunctionTok{which.max}\NormalTok{(testResult[,}\DecValTok{8}\NormalTok{]),]}
+\NormalTok{poisson.model.cutoff }\OtherTok{=}\NormalTok{ trainResult[}\FunctionTok{which.max}\NormalTok{(trainResult[,}\DecValTok{8}\NormalTok{]),]}
+
+\CommentTok{\# Get the F1 and Accuracy for train data using the optimal p value}
+\NormalTok{observations.train }\OtherTok{\textless{}{-}}\NormalTok{ train}\SpecialCharTok{$}\NormalTok{survived}
+\NormalTok{predictions.poisson.model.train }\OtherTok{\textless{}{-}} \FunctionTok{ifelse}\NormalTok{(predicted\_probs }\SpecialCharTok{\textgreater{}}\NormalTok{ poisson.model.cutoff[}\DecValTok{1}\NormalTok{], }\DecValTok{1}\NormalTok{, }\DecValTok{0}\NormalTok{)}
+
+\NormalTok{confusion.matrix.binary.model.poisson.train }\OtherTok{\textless{}{-}} \FunctionTok{confusionMatrix}\NormalTok{(}\FunctionTok{as.factor}\NormalTok{(predictions.poisson.model.train),}\FunctionTok{as.factor}\NormalTok{(observations.train), }\AttributeTok{positive =} \StringTok{"1"}\NormalTok{)}
+
+\NormalTok{poisson.model.accuracy.train }\OtherTok{=}\NormalTok{ confusion.matrix.binary.model.poisson.train}\SpecialCharTok{$}\NormalTok{overall[}\StringTok{\textquotesingle{}Accuracy\textquotesingle{}}\NormalTok{]}
+\NormalTok{poisson.model.f1.train }\OtherTok{=}\NormalTok{ confusion.matrix.binary.model.poisson.train}\SpecialCharTok{$}\NormalTok{byClass[}\StringTok{\textquotesingle{}F1\textquotesingle{}}\NormalTok{]}
+
+\NormalTok{poisson.model.train.summary }\OtherTok{=} \FunctionTok{data.frame}\NormalTok{(}
+  \AttributeTok{Accuracy =}\NormalTok{ poisson.model.accuracy.train,}
+  \AttributeTok{F1 =}\NormalTok{ poisson.model.f1.train}
+\NormalTok{)}
+
+\FunctionTok{row.names}\NormalTok{(poisson.model.train.summary) }\OtherTok{\textless{}{-}} \StringTok{\textquotesingle{}poisson.model.train\textquotesingle{}}
+
+\DocumentationTok{\#\#\# Test Data}
+
+\CommentTok{\# Testing against test data}
+\NormalTok{predicted\_probs }\OtherTok{\textless{}{-}} \FunctionTok{predict}\NormalTok{(poissonReg\_reduced, }\AttributeTok{newdata =}\NormalTok{ test, }\AttributeTok{type =} \StringTok{"response"}\NormalTok{)}
+
+\CommentTok{\# Get the F1 and Accuracy for test data using the optimal p value}
+\NormalTok{observations.test }\OtherTok{\textless{}{-}}\NormalTok{ test}\SpecialCharTok{$}\NormalTok{survived}
+\NormalTok{predictions.poisson.model.test }\OtherTok{\textless{}{-}} \FunctionTok{ifelse}\NormalTok{(predicted\_probs }\SpecialCharTok{\textgreater{}}\NormalTok{ poisson.model.cutoff[}\DecValTok{1}\NormalTok{], }\DecValTok{1}\NormalTok{, }\DecValTok{0}\NormalTok{)}
+
+\NormalTok{confusion.matrix.binary.model.poisson.test }\OtherTok{\textless{}{-}} \FunctionTok{confusionMatrix}\NormalTok{(}\FunctionTok{as.factor}\NormalTok{(predictions.poisson.model.test),}\FunctionTok{as.factor}\NormalTok{(observations.test), }\AttributeTok{positive =} \StringTok{"1"}\NormalTok{)}
+
+\NormalTok{poisson.model.accuracy.test }\OtherTok{=}\NormalTok{ confusion.matrix.binary.model.poisson.test}\SpecialCharTok{$}\NormalTok{overall[}\StringTok{\textquotesingle{}Accuracy\textquotesingle{}}\NormalTok{]}
+\NormalTok{poisson.model.f1.test }\OtherTok{=}\NormalTok{ confusion.matrix.binary.model.poisson.test}\SpecialCharTok{$}\NormalTok{byClass[}\StringTok{\textquotesingle{}F1\textquotesingle{}}\NormalTok{]}
+
+\NormalTok{poisson.model.test.summary }\OtherTok{=} \FunctionTok{data.frame}\NormalTok{(}
+  \AttributeTok{Accuracy =}\NormalTok{ poisson.model.accuracy.test,}
+  \AttributeTok{F1 =}\NormalTok{ poisson.model.f1.test}
+\NormalTok{)}
+
+\FunctionTok{row.names}\NormalTok{(poisson.model.test.summary) }\OtherTok{\textless{}{-}} \StringTok{\textquotesingle{}poisson.model.test\textquotesingle{}}
+
+\FunctionTok{data.frame}\NormalTok{(}\FunctionTok{rbind}\NormalTok{(poisson.model.train.summary,poisson.model.test.summary ))}
 \end{Highlighting}
 \end{Shaded}
 
-\begin{verbatim}
-                   p          Sensitivity          Specificity 
-           0.2900000            0.8759124            0.7921569 
-      Pos Pred Value       Neg Pred Value            Precision 
-           0.6936416            0.9223744            0.6936416 
-              Recall                   F1           Prevalence 
-           0.8759124            0.7741935            0.3494898 
-      Detection Rate Detection Prevalence    Balanced Accuracy 
-           0.3061224            0.4413265            0.8340346 
-\end{verbatim}
+\begin{longtable}[]{@{}lrr@{}}
+\toprule\noalign{}
+& Accuracy & F1 \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+poisson.model.train & 0.7663755 & 0.7590090 \\
+poisson.model.test & 0.7474490 & 0.7195467 \\
+\end{longtable}
 
 \section{Model Limitation and
 Assumptions}\label{model-limitation-and-assumptions}
 
 The champion model selected is the filtered logistic regression model
-due to its superior train accuracy (85.04\%) and F1 score (0.8099). The
+due to its superior test accuracy (84.1\%) and F1 score (0.78014). The
 filtered logistic regression model was developed through backward
 elimination procedure, applied to the full base model. This process
 iteratively removed predictors with high p-values until only
-statistically significant predictors remained, based on threshold (p
-\textless0.05). The base model is used as the benchmark due to its
-similar performance and broader feature set.
+statistically significant predictors remained. The base model is used as
+the benchmark due to its similar performance and broader feature set.
 
-``Survived = 5.56 - 0.055age - 0.23sibsp + 1pclass\_1 + 1.9pclass\_2 -
-3.2sex\_M + 0.84embarked\_C + 0.86embarked\_Q - 2.5deck\_A - 1.9deck\_B
-- 2.1deck\_C - 3.1deck\_D - 4.6deck\_F''
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{summary}\NormalTok{(binary.model.filtered)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+
+Call:
+glm(formula = survived ~ age + sibsp + pclass_1 + pclass_2 + 
+    sex_M + embarked_C + embarked_Q + deck_A + deck_B + deck_C + 
+    deck_D + deck_F, family = binomial, data = train)
+
+Coefficients:
+             Estimate Std. Error z value Pr(>|z|)    
+(Intercept)  5.745434   0.507728  11.316  < 2e-16 ***
+age         -0.053296   0.008919  -5.976 2.29e-09 ***
+sibsp       -0.254771   0.116064  -2.195  0.02816 *  
+pclass_1     0.799195   0.449070   1.780  0.07513 .  
+pclass_2     1.827594   0.297584   6.141 8.18e-10 ***
+sex_M       -3.278525   0.251332 -13.045  < 2e-16 ***
+embarked_C   0.830036   0.282806   2.935  0.00334 ** 
+embarked_Q   0.785344   0.354744   2.214  0.02684 *  
+deck_A      -2.549579   0.616634  -4.135 3.55e-05 ***
+deck_B      -1.896873   0.585234  -3.241  0.00119 ** 
+deck_C      -2.032446   0.516558  -3.935 8.33e-05 ***
+deck_D      -2.995951   0.494319  -6.061 1.35e-09 ***
+deck_F      -4.706551   0.404816 -11.626  < 2e-16 ***
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(Dispersion parameter for binomial family taken to be 1)
+
+    Null deviance: 1230.1  on 915  degrees of freedom
+Residual deviance:  635.0  on 903  degrees of freedom
+AIC: 661
+
+Number of Fisher Scoring iterations: 6
+\end{verbatim}
 
 To further evaluate and benchmark the logistic regression models, we
 computed RMSE, R², and MAE using the predicted probabilities against the
@@ -1951,7 +2056,7 @@ appears to have higher R² (0.4425\textgreater0.4342), lower RMSE(0.3945
 \textless{} 0.3977) and MAE (0.1556 \textless0.1582). Additionally,
 model validation was done through train/test split with consistent
 performance across sets. The performance on test data and train data
-show minimal difference, indicating the model is robust, no overfitting
+show minimal difference, indicating the model is robust, no over-itting
 problem.
 
 To evaluate the stability and fit of the base and filtered logistic
@@ -1973,8 +2078,7 @@ improved through additional transformations or interaction terms.
 
 Multicollinearity was significantly lower in the filtered model (max
 VIF: 3.69 vs.~16.63), supporting better generalization and
-interpretability. The VIF is less than 5, confirmed no severe
-multicollinearity.
+interpretability.
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -2020,8 +2124,8 @@ Model & BP\_Statistic & BP\_pvalue & Shapiro\_W & Shapiro\_pvalue \\
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-Base.model & 10.11660 & 0.0014694 & 0.9752266 & 0 \\
-Filtered.model & 10.31519 & 0.0013194 & 0.9751365 & 0 \\
+Base.model & 8.234753 & 0.0041096 & 0.9727993 & 0 \\
+Filtered.model & 8.213280 & 0.0041585 & 0.9726405 & 0 \\
 \end{longtable}
 
 \begin{Shaded}
@@ -2043,21 +2147,21 @@ Variables & Tolerance & VIF \\
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-age & 0.8112422 & 1.232677 \\
-sibsp & 0.8133135 & 1.229538 \\
-parch & 0.7793306 & 1.283152 \\
-fare & 0.5101132 & 1.960349 \\
-pclass\_1 & 0.2468157 & 4.051607 \\
-pclass\_2 & 0.7943336 & 1.258917 \\
-sex\_M & 0.8512441 & 1.174751 \\
-embarked\_C & 0.7176662 & 1.393405 \\
-embarked\_Q & 0.8520166 & 1.173686 \\
-deck\_A & 0.2572099 & 3.887875 \\
-deck\_B & 0.1656314 & 6.037501 \\
-deck\_C & 0.1183078 & 8.452526 \\
-deck\_D & 0.1511669 & 6.615204 \\
-deck\_E & 0.1232885 & 8.111060 \\
-deck\_F & 0.0562819 & 17.767709 \\
+age & 0.8045607 & 1.242914 \\
+sibsp & 0.8152516 & 1.226615 \\
+parch & 0.7785122 & 1.284501 \\
+fare & 0.5132230 & 1.948471 \\
+pclass\_1 & 0.2345039 & 4.264322 \\
+pclass\_2 & 0.7848041 & 1.274203 \\
+sex\_M & 0.8534444 & 1.171723 \\
+embarked\_C & 0.7524221 & 1.329041 \\
+embarked\_Q & 0.8549107 & 1.169713 \\
+deck\_A & 0.2520772 & 3.967038 \\
+deck\_B & 0.1505798 & 6.640995 \\
+deck\_C & 0.1062098 & 9.415324 \\
+deck\_D & 0.1509330 & 6.625458 \\
+deck\_E & 0.1122820 & 8.906149 \\
+deck\_F & 0.0522602 & 19.135037 \\
 \end{longtable}
 
 \begin{Shaded}
@@ -2079,18 +2183,18 @@ Variables & Tolerance & VIF \\
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-age & 0.8251918 & 1.211839 \\
-sibsp & 0.9323496 & 1.072559 \\
-pclass\_1 & 0.2772087 & 3.607391 \\
-pclass\_2 & 0.8044472 & 1.243090 \\
-sex\_M & 0.9085314 & 1.100677 \\
-embarked\_C & 0.7371420 & 1.356591 \\
-embarked\_Q & 0.8625868 & 1.159304 \\
-deck\_A & 0.6525446 & 1.532462 \\
-deck\_B & 0.5110353 & 1.956812 \\
-deck\_C & 0.4334379 & 2.307135 \\
-deck\_D & 0.5807436 & 1.721930 \\
-deck\_F & 0.3568101 & 2.802611 \\
+age & 0.8258163 & 1.210923 \\
+sibsp & 0.9322261 & 1.072701 \\
+pclass\_1 & 0.2639511 & 3.788581 \\
+pclass\_2 & 0.7953422 & 1.257321 \\
+sex\_M & 0.9103965 & 1.098423 \\
+embarked\_C & 0.7737213 & 1.292455 \\
+embarked\_Q & 0.8651816 & 1.155827 \\
+deck\_A & 0.6538958 & 1.529295 \\
+deck\_B & 0.5054336 & 1.978499 \\
+deck\_C & 0.4299243 & 2.325991 \\
+deck\_D & 0.6025945 & 1.659491 \\
+deck\_F & 0.3615519 & 2.765855 \\
 \end{longtable}
 
 \begin{Shaded}
@@ -2144,10 +2248,10 @@ models:}\tabularnewline
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-log.train.base & 0.3909456 & 0.4631895 & 0.1528384 \\
-log.test.base & 0.4040610 & 0.4177733 & 0.1632653 \\
-filtered.log.train.base & 0.3909456 & 0.4627873 & 0.1528384 \\
-filtered.test.base & 0.4040610 & 0.4177733 & 0.1632653 \\
+log.train.base & 0.3867342 & 0.4727588 & 0.1495633 \\
+log.test.base & 0.4008919 & 0.4240145 & 0.1607143 \\
+filtered.log.train.base & 0.3867342 & 0.4727588 & 0.1495633 \\
+filtered.test.base & 0.3976975 & 0.4322221 & 0.1581633 \\
 \end{longtable}
 
 \section{Ongoing Model Monitoring
@@ -2159,16 +2263,86 @@ do not have a lot of new data to test on the model, but we can still be
 prepared in case new data were to become available. The first step in
 monitoring the model is to determine specific thresholds that we expect
 the model to stay above. We would want the model to maintain certain
-R\^{}2, RMSE, and MAE values in order to determine that the model is
-working correctly. One of the biggest concerns with our model is data
-drift. Since the Titanic sank over 100 years ago, the data that we are
-using from the model may not align with today relevant to ship travel
-today.
+Accuracy and F1 values in order to determine that the model is working
+correctly. The first level we are monitoring is Accuracy or F1 values
+falling below 70\%. Once one of those values falls below 70\% we would
+examine the test data to make sure the data is valid. Assuming the data
+is valid, we will keep a closer eye on the model performance moving
+forward. Once both Accuracy and F1 values fall below 70\%, or one of the
+values falls below 60\%, we will retrain the model on more recent data.
+
+One of the biggest concerns with our model is data drift. Since the
+Titanic sank over 100 years ago, the data that we are using from the
+model may not align with data relevant to ship travel today. Our
+expectation is that age is one data point that will look drastically
+different for ship travel today than it did for the Titanic simply due
+to the massive increase in life expectancy (verywellhealth, 2024). Due
+to this change, we will make sure to closely monitor age in new data and
+will adjust the model if we see the median age change by 20\%.
+
+Another concern of ours is that there will be concept drift. It is
+possible that over time, the relationships between variables in the
+model will change, resulting in the model losing effectiveness. In order
+to account for this, we will continue to monitor correlations between
+the model variables and will adjust the model if we notice any large
+(greater than 20\%) changes in the correlations.
+
+Overall, we will monitor our model to make sure it remains robust. Our
+assumptions are that a robust model will maintain both Accuracy and F1
+values of over 70\%, while the correlations in the model remain fairly
+constant and new data doesn't appear to vary drastically from our
+training data. We will look for the model to keep Accuracy and F1 values
+above 70\%, while also making sure that median age of new data doesn't
+change by more than 20\% and that correlations between variables in the
+model don't change by more than 20\%. If any of these events were to
+happen, we would look to retrain our model on more recent data in order
+to maintain model robustness.
 
 \section{Conclusion}\label{conclusion}
 
-Summarize your results here. What is the best model for the data and
-why?
+As we can see from the comparing all three models. The
+``filtered.model'' performed the best against the test data set. This is
+due to the removal insignificant variables until our model remained with
+only sigificant predictors. Multicollinarity seemed to be a big factor
+that impacted our models accuracy and F1. Once we removed indications
+multicollinarity, we could see that our models performance increased
+over the base model.
+
+However, with the ``poisson.model'', we see a decrease in accuracy
+compared the base model. This decrease is expected due to the nature of
+the poisson regression. The regression is most useful when the response
+variable is a count variable rather than a binary response. Thus a
+decrease in accuracy and F1 is expected against the base model.
+
+As a conclusion, the model reduced via p-values filtering is the best
+model to predict if a passenger were to survive, with an accuracy of
+84.28\% and improved over the base model by 0.25\%.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{data.frame}\NormalTok{(}\FunctionTok{rbind}\NormalTok{(base.model.test.summary, }
+\NormalTok{                 filtered.model.test.summary,}
+\NormalTok{                 poisson.model.test.summary))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{longtable}[]{@{}lrr@{}}
+\caption{Comparison of our base model, best performing developed model,
+and challenger model}\tabularnewline
+\toprule\noalign{}
+& Accuracy & F1 \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+& Accuracy & F1 \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+base.model.test & 0.8392857 & 0.7758007 \\
+filtered.model.test & 0.8418367 & 0.7801418 \\
+poisson.model.test & 0.7474490 & 0.7195467 \\
+\end{longtable}
 
 \section*{Appendix A: Check if `sibsp' and `parch' should be continuous
 or categorical}\label{appendix_A}
@@ -2307,44 +2481,44 @@ Call:
 lm(formula = survived ~ ., data = train.ap1)
 
 Residuals:
-    Min      1Q  Median      3Q     Max 
--1.2866 -0.1941 -0.0224  0.1911  0.9739 
+     Min       1Q   Median       3Q      Max 
+-1.28431 -0.18993 -0.02983  0.19714  0.97447 
 
 Coefficients:
               Estimate Std. Error t value Pr(>|t|)    
-(Intercept)  1.1796068  0.1203338   9.803  < 2e-16 ***
-age         -0.0064249  0.0010420  -6.166 1.06e-09 ***
-sibsp       -0.0401162  0.0221954  -1.807  0.07104 .  
-parch       -0.0274112  0.0270379  -1.014  0.31095    
-fare         0.0004356  0.0002985   1.459  0.14481    
-pclass_1     0.1097829  0.0542228   2.025  0.04320 *  
-pclass_2     0.1381701  0.0312063   4.428 1.07e-05 ***
-sex_M       -0.4129619  0.0252816 -16.335  < 2e-16 ***
-embarked_C   0.0461410  0.0323127   1.428  0.15366    
-embarked_Q   0.1210184  0.0426024   2.841  0.00461 ** 
-deck_A      -0.3494376  0.1454048  -2.403  0.01646 *  
-deck_B      -0.3123626  0.1372942  -2.275  0.02314 *  
-deck_C      -0.3040370  0.1331009  -2.284  0.02259 *  
-deck_D      -0.3432119  0.1290127  -2.660  0.00795 ** 
-deck_E       0.0041655  0.1243264   0.034  0.97328    
-deck_F      -0.5934388  0.1184958  -5.008 6.63e-07 ***
-sibsp_1      0.0567316  0.0355896   1.594  0.11128    
-sibsp_2      0.1212082  0.0797596   1.520  0.12895    
-sibsp_3     -0.1501858  0.1195550  -1.256  0.20937    
-sibsp_4     -0.2298081  0.1296372  -1.773  0.07662 .  
-sibsp_5     -0.2293432  0.2019073  -1.136  0.25631    
-parch_1      0.1426458  0.0454040   3.142  0.00174 ** 
-parch_2      0.1456666  0.0715147   2.037  0.04196 *  
-parch_3      0.2704118  0.1739380   1.555  0.12039    
-parch_4     -0.0799175  0.2038416  -0.392  0.69511    
-parch_5      0.0679073  0.2385574   0.285  0.77597    
-parch_6      0.0143690  0.2895211   0.050  0.96043    
+(Intercept)  1.1771844  0.1208120   9.744  < 2e-16 ***
+age         -0.0062915  0.0010464  -6.013 2.66e-09 ***
+sibsp       -0.0387862  0.0222879  -1.740  0.08216 .  
+parch       -0.0300588  0.0271365  -1.108  0.26830    
+fare         0.0003968  0.0002994   1.325  0.18550    
+pclass_1     0.0811930  0.0556170   1.460  0.14468    
+pclass_2     0.1305011  0.0315138   4.141 3.79e-05 ***
+sex_M       -0.4220045  0.0253002 -16.680  < 2e-16 ***
+embarked_C   0.0477656  0.0322484   1.481  0.13891    
+embarked_Q   0.1103169  0.0427122   2.583  0.00996 ** 
+deck_A      -0.3194255  0.1468546  -2.175  0.02988 *  
+deck_B      -0.2768199  0.1381986  -2.003  0.04547 *  
+deck_C      -0.2682689  0.1346614  -1.992  0.04666 *  
+deck_D      -0.3270119  0.1314397  -2.488  0.01303 *  
+deck_E       0.0136466  0.1251546   0.109  0.91320    
+deck_F      -0.5835976  0.1189681  -4.905 1.11e-06 ***
+sibsp_1      0.0752979  0.0356515   2.112  0.03496 *  
+sibsp_2      0.1073260  0.0801711   1.339  0.18101    
+sibsp_3     -0.1027125  0.1199623  -0.856  0.39211    
+sibsp_4     -0.2242068  0.1301364  -1.723  0.08526 .  
+sibsp_5     -0.2237646  0.2026863  -1.104  0.26989    
+parch_1      0.1456157  0.0456425   3.190  0.00147 ** 
+parch_2      0.1363899  0.0718664   1.898  0.05804 .  
+parch_3      0.2094703  0.1744398   1.201  0.23014    
+parch_4     -0.0890979  0.2045944  -0.435  0.66332    
+parch_5      0.0600587  0.2394630   0.251  0.80202    
+parch_6      0.0037453  0.2906192   0.013  0.98972    
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
-Residual standard error: 0.34 on 889 degrees of freedom
-Multiple R-squared:  0.5273,    Adjusted R-squared:  0.5135 
-F-statistic: 38.14 on 26 and 889 DF,  p-value: < 2.2e-16
+Residual standard error: 0.3413 on 889 degrees of freedom
+Multiple R-squared:  0.5237,    Adjusted R-squared:  0.5098 
+F-statistic: 37.59 on 26 and 889 DF,  p-value: < 2.2e-16
 \end{verbatim}
 
 \begin{Shaded}
@@ -2355,13 +2529,13 @@ F-statistic: 38.14 on 26 and 889 DF,  p-value: < 2.2e-16
 
 \begin{verbatim}
        age      sibsp      parch       fare   pclass_1   pclass_2      sex_M 
-  1.460949   3.467000   4.494487   1.922834   4.492433   1.297793   1.164100 
+  1.461878   3.469370   4.492844   1.920452   4.690456   1.313421   1.156946 
 embarked_C embarked_Q     deck_A     deck_B     deck_C     deck_D     deck_E 
-  1.437150   1.172137   5.135825   8.715727  13.411354   9.672668  12.015361 
+  1.420534   1.169222   5.198873   8.907075  13.377776   9.336210  11.767550 
     deck_F    sibsp_1    sibsp_2    sibsp_3    sibsp_4    sibsp_5    parch_1 
- 26.716246   1.876291   1.441990   1.464254   1.863037   1.404398   1.911901 
+ 26.496638   1.868491   1.445820   1.463025   1.863122   1.404482   1.917338 
    parch_2    parch_3    parch_4    parch_5    parch_6 
-  3.083293   1.301393   1.431435   1.472004   1.446997 
+  3.089996   1.298950   1.431051   1.471912   1.446896 
 \end{verbatim}
 
 \begin{Shaded}
@@ -2378,41 +2552,41 @@ glm(formula = as.factor(survived) ~ ., family = binomial, data = train.ap1)
 
 Coefficients:
               Estimate Std. Error z value Pr(>|z|)    
-(Intercept)  5.253e+00  1.384e+00   3.797 0.000147 ***
-age         -5.481e-02  9.965e-03  -5.500 3.79e-08 ***
-sibsp       -1.946e+00  1.291e+02  -0.015 0.987976    
-parch       -1.642e+00  1.623e+02  -0.010 0.991928    
-fare         1.057e-03  2.428e-03   0.435 0.663393    
-pclass_1     1.156e+00  4.819e-01   2.398 0.016480 *  
-pclass_2     1.496e+00  3.095e-01   4.834 1.34e-06 ***
-sex_M       -2.982e+00  2.464e-01 -12.103  < 2e-16 ***
-embarked_C   6.410e-01  2.868e-01   2.235 0.025424 *  
-embarked_Q   1.316e+00  3.735e-01   3.523 0.000427 ***
-deck_A      -2.866e+00  1.503e+00  -1.907 0.056492 .  
-deck_B      -2.498e+00  1.479e+00  -1.689 0.091220 .  
-deck_C      -2.624e+00  1.445e+00  -1.817 0.069262 .  
-deck_D      -2.971e+00  1.415e+00  -2.100 0.035711 *  
-deck_E       3.196e-01  1.404e+00   0.228 0.819965    
-deck_F      -4.753e+00  1.358e+00  -3.499 0.000467 ***
-sibsp_1      2.065e+00  1.291e+02   0.016 0.987240    
-sibsp_2      4.356e+00  2.583e+02   0.017 0.986546    
-sibsp_3      3.607e+00  3.874e+02   0.009 0.992572    
-sibsp_4      4.557e+00  5.166e+02   0.009 0.992962    
-sibsp_5     -6.723e+00  1.240e+03  -0.005 0.995674    
-parch_1      2.597e+00  1.623e+02   0.016 0.987237    
-parch_2      4.192e+00  3.247e+02   0.013 0.989698    
-parch_3      6.236e+00  4.870e+02   0.013 0.989785    
-parch_4      6.227e+00  6.494e+02   0.010 0.992349    
-parch_5      8.544e+00  8.117e+02   0.011 0.991602    
-parch_6     -4.112e+00  1.770e+03  -0.002 0.998146    
+(Intercept)  5.266e+00  1.399e+00   3.765 0.000167 ***
+age         -5.266e-02  9.841e-03  -5.351 8.76e-08 ***
+sibsp       -1.942e+00  1.285e+02  -0.015 0.987938    
+parch       -1.671e+00  1.615e+02  -0.010 0.991745    
+fare         7.583e-04  2.406e-03   0.315 0.752647    
+pclass_1     8.262e-01  4.862e-01   1.699 0.089253 .  
+pclass_2     1.344e+00  3.064e-01   4.385 1.16e-05 ***
+sex_M       -3.044e+00  2.476e-01 -12.296  < 2e-16 ***
+embarked_C   6.262e-01  2.821e-01   2.220 0.026451 *  
+embarked_Q   1.147e+00  3.682e-01   3.116 0.001834 ** 
+deck_A      -2.578e+00  1.522e+00  -1.694 0.090192 .  
+deck_B      -2.209e+00  1.496e+00  -1.477 0.139625    
+deck_C      -2.266e+00  1.468e+00  -1.544 0.122706    
+deck_D      -2.772e+00  1.439e+00  -1.926 0.054095 .  
+deck_E       3.489e-01  1.422e+00   0.245 0.806183    
+deck_F      -4.675e+00  1.374e+00  -3.403 0.000665 ***
+sibsp_1      2.202e+00  1.285e+02   0.017 0.986323    
+sibsp_2      4.142e+00  2.570e+02   0.016 0.987141    
+sibsp_3      4.166e+00  3.854e+02   0.011 0.991377    
+sibsp_4      4.649e+00  5.139e+02   0.009 0.992783    
+sibsp_5     -6.681e+00  1.233e+03  -0.005 0.995677    
+parch_1      2.640e+00  1.615e+02   0.016 0.986959    
+parch_2      4.102e+00  3.230e+02   0.013 0.989869    
+parch_3      5.957e+00  4.845e+02   0.012 0.990190    
+parch_4      6.123e+00  6.460e+02   0.009 0.992438    
+parch_5      8.503e+00  8.076e+02   0.011 0.991599    
+parch_6     -4.236e+00  1.760e+03  -0.002 0.998080    
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 (Dispersion parameter for binomial family taken to be 1)
 
     Null deviance: 1223.12  on 915  degrees of freedom
-Residual deviance:  602.86  on 889  degrees of freedom
-AIC: 656.86
+Residual deviance:  609.92  on 889  degrees of freedom
+AIC: 663.92
 
 Number of Fisher Scoring iterations: 15
 \end{verbatim}
@@ -2425,15 +2599,15 @@ Number of Fisher Scoring iterations: 15
 
 \begin{verbatim}
          age        sibsp        parch         fare     pclass_1     pclass_2 
-1.653195e+00 7.591027e+05 1.634339e+06 1.757536e+00 4.949336e+00 1.555093e+00 
+1.644869e+00 7.753684e+05 1.618468e+06 1.763642e+00 5.096422e+00 1.529833e+00 
        sex_M   embarked_C   embarked_Q       deck_A       deck_B       deck_C 
-1.404155e+00 1.549826e+00 1.415978e+00 1.012962e+01 1.475410e+01 2.517074e+01 
+1.439671e+00 1.505300e+00 1.370293e+00 1.035046e+01 1.551825e+01 2.526478e+01 
       deck_D       deck_E       deck_F      sibsp_1      sibsp_2      sibsp_3 
-1.980371e+01 1.464836e+01 4.346983e+01 3.294475e+05 1.808931e+05 1.937224e+05 
+1.949011e+01 1.511758e+01 4.497328e+01 3.293441e+05 1.876474e+05 2.068774e+05 
      sibsp_4      sibsp_5      parch_1      parch_2      parch_3      parch_4 
-1.974919e+05 1.372219e+00 3.139987e+05 6.986245e+05 2.469813e+05 2.280957e+05 
+1.995922e+05 1.372545e+00 3.184507e+05 6.909815e+05 2.223700e+05 2.249046e+05 
      parch_5      parch_6 
-4.056249e+05 1.434520e+00 
+4.152894e+05 1.434758e+00 
 \end{verbatim}
 
 \begin{Shaded}
@@ -2470,10 +2644,10 @@ Number of Fisher Scoring iterations: 15
 \endhead
 \bottomrule\noalign{}
 \endlastfoot
-linear.train.ap1 & 0.3796114 & 0.4824536 & 0.1441048 \\
-linear.test.ap1 & 0.3976975 & 0.4365256 & 0.1581633 \\
-log.train.ap1 & 0.3964912 & 0.4429840 & 0.1572052 \\
-log.test.ap1 & 0.4008919 & 0.4214242 & 0.1607143 \\
+linear.train.ap1 & 0.3881430 & 0.4633288 & 0.1506550 \\
+linear.test.ap1 & 0.4040610 & 0.4221825 & 0.1632653 \\
+log.train.ap1 & 0.3951121 & 0.4460886 & 0.1561135 \\
+log.test.ap1 & 0.3912304 & 0.4439052 & 0.1530612 \\
 \end{longtable}
 
 \begin{Shaded}
@@ -2488,28 +2662,28 @@ Confusion Matrix and Statistics
 
           Reference
 Prediction   0   1
-         0 502  73
-         1  59 282
-                                         
-               Accuracy : 0.8559         
-                 95% CI : (0.8315, 0.878)
-    No Information Rate : 0.6124         
-    P-Value [Acc > NIR] : <2e-16         
-                                         
-                  Kappa : 0.6942         
-                                         
- Mcnemar's Test P-Value : 0.2578         
-                                         
-              Precision : 0.8270         
-                 Recall : 0.7944         
-                     F1 : 0.8103         
-             Prevalence : 0.3876         
-         Detection Rate : 0.3079         
-   Detection Prevalence : 0.3723         
-      Balanced Accuracy : 0.8446         
-                                         
-       'Positive' Class : 1              
-                                         
+         0 499  76
+         1  62 279
+                                          
+               Accuracy : 0.8493          
+                 95% CI : (0.8245, 0.8719)
+    No Information Rate : 0.6124          
+    P-Value [Acc > NIR] : <2e-16          
+                                          
+                  Kappa : 0.6803          
+                                          
+ Mcnemar's Test P-Value : 0.2685          
+                                          
+              Precision : 0.8182          
+                 Recall : 0.7859          
+                     F1 : 0.8017          
+             Prevalence : 0.3876          
+         Detection Rate : 0.3046          
+   Detection Prevalence : 0.3723          
+      Balanced Accuracy : 0.8377          
+                                          
+       'Positive' Class : 1               
+                                          
 \end{verbatim}
 
 \begin{Shaded}
@@ -2524,25 +2698,25 @@ Confusion Matrix and Statistics
 
           Reference
 Prediction   0   1
-         0 216  31
-         1  31 114
+         0 215  32
+         1  32 113
                                           
-               Accuracy : 0.8418          
-                 95% CI : (0.8019, 0.8765)
+               Accuracy : 0.8367          
+                 95% CI : (0.7964, 0.8719)
     No Information Rate : 0.6301          
     P-Value [Acc > NIR] : <2e-16          
                                           
-                  Kappa : 0.6607          
+                  Kappa : 0.6498          
                                           
  Mcnemar's Test P-Value : 1               
                                           
-              Precision : 0.7862          
-                 Recall : 0.7862          
-                     F1 : 0.7862          
+              Precision : 0.7793          
+                 Recall : 0.7793          
+                     F1 : 0.7793          
              Prevalence : 0.3699          
-         Detection Rate : 0.2908          
+         Detection Rate : 0.2883          
    Detection Prevalence : 0.3699          
-      Balanced Accuracy : 0.8304          
+      Balanced Accuracy : 0.8249          
                                           
        'Positive' Class : 1               
                                           
@@ -2560,25 +2734,25 @@ Confusion Matrix and Statistics
 
           Reference
 Prediction   0   1
-         0 523 106
-         1  38 249
+         0 523 105
+         1  38 250
                                           
-               Accuracy : 0.8428          
-                 95% CI : (0.8176, 0.8658)
+               Accuracy : 0.8439          
+                 95% CI : (0.8187, 0.8668)
     No Information Rate : 0.6124          
     P-Value [Acc > NIR] : < 2.2e-16       
                                           
-                  Kappa : 0.6568          
+                  Kappa : 0.6593          
                                           
- Mcnemar's Test P-Value : 2.36e-08        
+ Mcnemar's Test P-Value : 3.406e-08       
                                           
-              Precision : 0.8676          
-                 Recall : 0.7014          
-                     F1 : 0.7757          
+              Precision : 0.8681          
+                 Recall : 0.7042          
+                     F1 : 0.7776          
              Prevalence : 0.3876          
-         Detection Rate : 0.2718          
-   Detection Prevalence : 0.3133          
-      Balanced Accuracy : 0.8168          
+         Detection Rate : 0.2729          
+   Detection Prevalence : 0.3144          
+      Balanced Accuracy : 0.8182          
                                           
        'Positive' Class : 1               
                                           
@@ -2596,25 +2770,25 @@ Confusion Matrix and Statistics
 
           Reference
 Prediction   0   1
-         0 226  42
-         1  21 103
+         0 227  40
+         1  20 105
                                           
-               Accuracy : 0.8393          
-                 95% CI : (0.7991, 0.8742)
+               Accuracy : 0.8469          
+                 95% CI : (0.8074, 0.8811)
     No Information Rate : 0.6301          
     P-Value [Acc > NIR] : < 2e-16         
                                           
-                  Kappa : 0.6446          
+                  Kappa : 0.662           
                                           
- Mcnemar's Test P-Value : 0.01174         
+ Mcnemar's Test P-Value : 0.01417         
                                           
-              Precision : 0.8306          
-                 Recall : 0.7103          
-                     F1 : 0.7658          
+              Precision : 0.8400          
+                 Recall : 0.7241          
+                     F1 : 0.7778          
              Prevalence : 0.3699          
-         Detection Rate : 0.2628          
-   Detection Prevalence : 0.3163          
-      Balanced Accuracy : 0.8127          
+         Detection Rate : 0.2679          
+   Detection Prevalence : 0.3189          
+      Balanced Accuracy : 0.8216          
                                           
        'Positive' Class : 1               
                                           
@@ -3042,6 +3216,11 @@ National Oceanic and Atmospheric Administration (NOAA). (2023).
 Statology. (2025). \emph{How to measure correlation between categorical
 variables}.
 \url{https://www.statology.org/correlation-between-categorical-variables/}
+
+\bibitem[\citeproctext]{ref-verywellhealth2024}
+verywellhealth. (2024). \emph{How has average life expectancy changed
+from the 1800s to today?}
+\url{https://www.verywellhealth.com/longevity-throughout-history-2224054}
 
 \end{CSLReferences}
 
