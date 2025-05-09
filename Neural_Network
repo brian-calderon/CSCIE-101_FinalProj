@@ -1,5 +1,6 @@
-```{r Neural Network}
+```{r Neural Network - all variables}
 library(neuralnet)
+library(caret)
 normalize <- function(x) {return((x - min(x)) / (max(x) - min(x)))}
 
 data1 <- train[c(2,5)]
@@ -7,25 +8,63 @@ data2 <- train[-c(2,5)]
 NN_train <- as.data.frame(lapply(data1, normalize))
 train_norm <- cbind(NN_train,data2)
 
-nn_model <- neuralnet(survived ~ ., data = train_norm, hidden = c(1,1))
+nn_model <- neuralnet(survived ~ ., data = train_norm, hidden = 1)
 plot(nn_model)
 
 unnormalize <- function(x) {return((x * (max(data.clean$survived)) -min(data.clean$survived)) + min(data.clean$survived))}
 
-model_results_train <- compute(nn_model, train_norm[-1])
-model_results_test <- compute(nn_model, test[-1])
+model_results_train <- compute(nn_model, train_norm[-3])
+model_results_test <- compute(nn_model, test[-3])
 
 predicted_survived_train <- model_results_train$net.result
 PredictedTrain<-unnormalize(predicted_survived_train)
-ModelTrain<-data.frame(obs = train_norm$survived, pred=PredictedTrain)
+predictions_train <- ifelse(PredictedTrain > 0.5, 1, 0)
+ModelTrain<-data.frame(obs = train_norm$survived, pred=predictions_train)
 nn_sum <- defaultSummary(ModelTrain)
 nn_sum
-cor(predicted_survived_train, train_norm$survived)
+cor(predictions_train, train_norm$survived)
 
 predicted_survived_test <- model_results_test$net.result
 PredictedTest<-unnormalize(predicted_survived_test)
-ModelTest<-data.frame(obs = test$survived, pred=PredictedTest)
+predictions_test <- ifelse(PredictedTest > 0.5, 1, 0)
+ModelTest<-data.frame(obs = test$survived, pred=predictions_test)
 nn_sum_test <- defaultSummary(ModelTest)
 nn_sum_test
-cor(predicted_survived_test, test$survived)
+cor(predictions_test, test$survived)
+```
+
+
+```{r Neural Network - Stepwise Variables}
+library(neuralnet)
+library(caret)
+normalize <- function(x) {return((x - min(x)) / (max(x) - min(x)))}
+
+data1 <- train[c(2,5)]
+data2 <- train[-c(2,5)]
+NN_train <- as.data.frame(lapply(data1, normalize))
+train_norm <- cbind(NN_train,data2)
+
+nn_model_step <- neuralnet(survived ~ sex_M + deck_F  + age + deck_E  + pclass_2 + pclass_1 + sibsp + fare, data = train_norm, hidden = 1)
+plot(nn_model_step)
+
+unnormalize <- function(x) {return((x * (max(data.clean$survived)) -min(data.clean$survived)) + min(data.clean$survived))}
+
+model_results_train <- compute(nn_model_step, train_norm[c(1,2,4,6,7,8,15,16)])
+model_results_test <- compute(nn_model_step, test[c(1,2,4,6,7,8,15,16)])
+
+predicted_survived_train <- model_results_train$net.result
+PredictedTrain<-unnormalize(predicted_survived_train)
+predictions_train <- ifelse(PredictedTrain > 0.5, 1, 0)
+ModelTrain<-data.frame(obs = train_norm$survived, pred=predictions_train)
+nn_sum <- defaultSummary(ModelTrain)
+nn_sum
+cor(predictions_train, train_norm$survived)
+
+predicted_survived_test <- model_results_test$net.result
+PredictedTest<-unnormalize(predicted_survived_test)
+predictions_test <- ifelse(PredictedTest > 0.5, 1, 0)
+ModelTest<-data.frame(obs = test$survived, pred=predictions_test)
+nn_sum_test <- defaultSummary(ModelTest)
+nn_sum_test
+cor(predictions_test, test$survived)
 ```
