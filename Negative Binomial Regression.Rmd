@@ -1,0 +1,55 @@
+###Negative Binomial Regression - Titanic Survival###
+
+library(MASS)
+library(pROC)
+library(ggplot2)
+library(caret)
+
+# 1. Fit the Negative Binomial Model
+
+nb_model <- glm.nb(survived ~ ., data = train)
+summary(nb_model)
+
+# 2. Check for Overdispersion
+
+dispersion <- sum(residuals(nb_model, type = "pearson")^2) / nb_model$df.residual
+cat("Dispersion statistic:", round(dispersion, 3), "\n")
+# Values > 1 suggest overdispersion (validating use of NB over Poisson)
+
+# 3. Predict on Test Set
+
+nb_preds <- predict(nb_model, newdata = test, type = "response")
+
+#Convert predicted probs to binary classification
+nb_preds_class <- ifelse(nb_preds > 0.5, 1, 0)
+
+#Confusion matrix
+conf_mat <- confusionMatrix(as.factor(nb_preds_class), as.factor(test$survived))
+print(conf_mat)
+
+#Pseudo R-squared (McFadden's)
+pseudo_r2 <- 1 - (nb_model$deviance / nb_model$null.deviance)
+cat("Pseudo R²:", round(pseudo_r2, 3), "\n")
+
+# 4. ROC Curve & AUC
+
+roc_obj <- roc(test$survived, nb_preds)
+auc_score <- auc(roc_obj)
+cat("AUC:", round(auc_score, 3), "\n")
+plot(roc_obj, col = "blue", main = "ROC Curve - Negative Binomial Model")
+
+# 5. Visualize Predicted Probabilities
+
+ggplot(data.frame(nb_preds), aes(x = nb_preds)) +
+  geom_histogram(fill = "skyblue", bins = 30) +
+  labs(title = "Histogram of Predicted Probabilities - NB Model",
+       x = "Predicted Probability of Survival", y = "Frequency")
+
+# 6. Actual vs Predicted Plot
+
+test$pred_nb <- nb_preds
+ggplot(test, aes(x = pred_nb, y = as.numeric(survived))) +
+  geom_jitter(width = 0.1, height = 0.1, alpha = 0.4) +
+  geom_smooth(method = "lm", se = FALSE, color = "darkred") +
+  labs(title = "Actual vs Predicted Probabilities",
+       x = "Predicted Probability", y = "Actual Survival (0/1)")
